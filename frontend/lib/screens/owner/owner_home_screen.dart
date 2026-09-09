@@ -70,7 +70,7 @@ class OwnerHomeScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.12),
+                            color: AppColors.success.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(

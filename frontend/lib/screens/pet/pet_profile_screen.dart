@@ -26,18 +26,18 @@ class PetProfileScreen extends StatelessWidget {
             CustomCard(
               child: Column(
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     radius: 40,
                     backgroundColor: AppColors.primaryLight,
-                    child: const Icon(Icons.pets, size: 44, color: AppColors.primary),
+                    child: Icon(Icons.pets, size: 44, color: AppColors.primary),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text('Milo', style: Theme.of(context).textTheme.headlineMedium),
                   const Text('Golden Retriever • 3 Years Old', style: TextStyle(color: AppColors.textSecondary)),
                   const SizedBox(height: AppSpacing.sm),
-                  Chip(
+                  const Chip(
                     backgroundColor: AppColors.surfaceVariant,
-                    label: const Text('Microchip: #985141002345'),
+                    label: Text('Microchip: #985141002345'),
                   ),
                 ],
               ),

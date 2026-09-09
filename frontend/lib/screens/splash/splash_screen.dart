@@ -101,7 +101,7 @@ class SplashScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.md),
 
-                    Wrap(
+                    const Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [

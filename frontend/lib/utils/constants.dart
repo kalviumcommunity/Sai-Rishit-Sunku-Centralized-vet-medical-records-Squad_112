@@ -156,14 +156,14 @@ class AppTheme {
       ),
 
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: const CardThemeData(
         color: AppColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.cardRadius,
-          side: const BorderSide(color: AppColors.border, width: 1),
+          side: BorderSide(color: AppColors.border, width: 1),
         ),
-        margin: const EdgeInsets.symmetric(
+        margin: EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: AppSpacing.sm,
         ),
@@ -218,36 +218,36 @@ class AppTheme {
       ),
 
       // Input Decoration Theme
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: const InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
-        contentPadding: const EdgeInsets.symmetric(
+        contentPadding: EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: 16,
         ),
-        hintStyle: const TextStyle(
+        hintStyle: TextStyle(
           color: AppColors.textMuted,
           fontSize: 14,
         ),
-        labelStyle: const TextStyle(
+        labelStyle: TextStyle(
           color: AppColors.textSecondary,
           fontSize: 14,
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.inputRadius,
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
+          borderSide: BorderSide(color: AppColors.border, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.inputRadius,
-          borderSide: const BorderSide(color: AppColors.border, width: 1),
+          borderSide: BorderSide(color: AppColors.border, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.inputRadius,
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.inputRadius,
-          borderSide: const BorderSide(color: AppColors.error, width: 1),
+          borderSide: BorderSide(color: AppColors.error, width: 1),
         ),
       ),
     );
