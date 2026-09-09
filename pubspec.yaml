@@ -1,0 +1,33 @@
+name: vetcare
+description: "VetCare - Centralized Veterinary Medical Records Mobile App across clinic branches"
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase Core & Services
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  google_sign_in: ^6.2.1
+  cloud_firestore: ^5.4.4
+  firebase_storage: ^12.3.4
+
+  # State Management (Lightweight, Provider recommended)
+  provider: ^6.1.2
+
+  # UI & Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
