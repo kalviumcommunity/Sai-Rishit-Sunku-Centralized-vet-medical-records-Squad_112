@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 
@@ -25,12 +26,27 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    final authService = context.read<AuthService>();
-    final destinationRoute = await authService.determineInitialRoute();
+    try {
+      final authService = context.read<AuthService>();
+      final destinationRoute = await authService.determineInitialRoute();
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    Navigator.pushReplacementNamed(context, destinationRoute);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        destinationRoute,
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('Splash routing notice: $e');
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.login,
+          (route) => false,
+        );
+      }
+    }
   }
 
   @override

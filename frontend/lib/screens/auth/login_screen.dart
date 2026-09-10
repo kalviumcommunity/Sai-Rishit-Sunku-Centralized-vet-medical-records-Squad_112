@@ -42,7 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final nextRoute = await authService.determineInitialRoute(waitDuration: Duration.zero);
       if (!mounted) return;
 
-      Navigator.pushReplacementNamed(context, nextRoute);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        nextRoute,
+        (route) => false,
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       String message = e.message ?? 'Google Sign-In failed.';
@@ -102,7 +106,11 @@ class _LoginScreenState extends State<LoginScreen> {
       final nextRoute = await authService.determineInitialRoute(waitDuration: Duration.zero);
       if (!mounted) return;
 
-      Navigator.pushReplacementNamed(context, nextRoute);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        nextRoute,
+        (route) => false,
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       String message = e.message ?? 'Sign-in failed.';

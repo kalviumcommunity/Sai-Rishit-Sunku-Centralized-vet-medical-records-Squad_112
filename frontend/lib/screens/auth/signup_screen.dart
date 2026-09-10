@@ -51,7 +51,11 @@ class _SignupScreenState extends State<SignupScreen> {
       final nextRoute = await authService.determineInitialRoute(waitDuration: Duration.zero);
       if (!mounted) return;
 
-      Navigator.pushReplacementNamed(context, nextRoute);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        nextRoute,
+        (route) => false,
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       String message = e.message ?? 'Authentication error occurred.';
@@ -137,7 +141,11 @@ class _SignupScreenState extends State<SignupScreen> {
       final nextRoute = await authService.determineInitialRoute(waitDuration: Duration.zero);
       if (!mounted) return;
 
-      Navigator.pushReplacementNamed(context, nextRoute);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        nextRoute,
+        (route) => false,
+      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       String message = e.message ?? 'An authentication error occurred.';
