@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_card.dart';
@@ -16,6 +17,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _branchController = TextEditingController();
+
   String _selectedRole = 'owner'; // 'owner' or 'vet'
   bool _isLoading = false;
 
@@ -24,18 +28,59 @@ class _SignupScreenState extends State<SignupScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _branchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleGoogleSignUp() async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = context.read<AuthService>();
+      await authService.signInWithGoogle();
+
+      if (!mounted) return;
+
+      final nextRoute = await authService.determineInitialRoute(waitDuration: Duration.zero);
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, nextRoute);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-Up error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   Future<void> _handleRegister() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+    final branchId = _branchController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please fill out all fields.'),
+          content: Text('Please fill out all required fields.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passwords do not match.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -60,6 +105,7 @@ class _SignupScreenState extends State<SignupScreen> {
         email: email,
         password: password,
         role: _selectedRole,
+        branchId: branchId.isNotEmpty ? branchId : null,
       );
 
       if (!mounted) return;
@@ -86,7 +132,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign Up')),
+      appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -111,7 +157,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   children: [
                     // Role Selector
                     Text(
-                      'Account Role',
+                      'I am registering as:',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -153,6 +199,20 @@ class _SignupScreenState extends State<SignupScreen> {
                         prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
                       ),
                     ),
+
+                    // Branch ID field if veterinarian role is selected
+                    if (_selectedRole == 'vet') ...[
+                      const SizedBox(height: AppSpacing.md),
+                      TextField(
+                        controller: _branchController,
+                        decoration: const InputDecoration(
+                          labelText: 'Assigned Clinic Branch ID',
+                          hintText: 'e.g. branch_central_01',
+                          prefixIcon: Icon(Icons.apartment, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: AppSpacing.md),
                     TextField(
                       controller: _passwordController,
@@ -160,6 +220,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Password (min 6 chars)',
                         prefixIcon: Icon(Icons.lock_outline, color: AppColors.textSecondary),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: _confirmPasswordController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm Password',
+                        prefixIcon: Icon(Icons.lock_reset_outlined, color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
@@ -171,13 +240,32 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: CircularProgressIndicator(color: AppColors.primary),
                         ),
                       )
-                    else
+                    else ...[
                       ElevatedButton(
                         onPressed: _handleRegister,
                         child: const Text('Create Account'),
                       ),
+                      const SizedBox(height: AppSpacing.md),
+                      OutlinedButton.icon(
+                        onPressed: _handleGoogleSignUp,
+                        icon: const Icon(Icons.g_mobiledata, size: 28),
+                        label: const Text('Continue with Google'),
+                      ),
+                    ],
                   ],
                 ),
+              ),
+
+              const SizedBox(height: AppSpacing.lg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Already have an account? ', style: TextStyle(color: AppColors.textSecondary)),
+                  TextButton(
+                    onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
+                    child: const Text('Sign In'),
+                  ),
+                ],
               ),
             ],
           ),
