@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/user_model.dart';
 import '../routes/app_routes.dart';
@@ -133,6 +134,63 @@ class AuthService extends ChangeNotifier {
         name: 'Demo User',
         email: email,
         role: _mockRole,
+        createdAt: DateTime.now(),
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> signInWithGoogle() async {
+    if (_auth != null) {
+      UserCredential userCredential;
+      if (kIsWeb) {
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        userCredential = await _auth!.signInWithPopup(googleProvider);
+      } else {
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        if (googleUser == null) {
+          // User aborted Google sign-in
+          return;
+        }
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        userCredential = await _auth!.signInWithCredential(credential);
+      }
+
+      _currentUser = userCredential.user;
+      if (_currentUser != null) {
+        if (_firestore != null) {
+          final doc = await _firestore!.collection('users').doc(_currentUser!.uid).get();
+          if (!doc.exists) {
+            final newUser = UserModel(
+              id: _currentUser!.uid,
+              name: _currentUser!.displayName ?? 'Pet Owner',
+              email: _currentUser!.email ?? '',
+              role: 'owner',
+              createdAt: DateTime.now(),
+            );
+            await _firestore!.collection('users').doc(_currentUser!.uid).set(newUser.toMap());
+            _currentUserModel = newUser;
+          } else {
+            _currentUserModel = UserModel.fromFirestore(doc);
+          }
+        }
+      }
+    } else {
+      // Mock fallback
+      _mockLoggedIn = true;
+      _mockRole = 'owner';
+      _currentUserModel = UserModel(
+        id: 'google_mock_uid',
+        name: 'Google User',
+        email: 'google_user@gmail.com',
+        role: 'owner',
         createdAt: DateTime.now(),
       );
     }

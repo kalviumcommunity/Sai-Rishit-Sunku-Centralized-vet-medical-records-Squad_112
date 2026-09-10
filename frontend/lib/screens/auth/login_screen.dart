@@ -1,10 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../routes/app_routes.dart';
+import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_card.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = context.read<AuthService>();
+      await authService.signInWithGoogle();
+
+      if (!mounted) return;
+
+      final nextRoute = await authService.determineInitialRoute(waitDuration: Duration.zero);
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, nextRoute);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-In error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleEmailSignIn() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter both email and password.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final authService = context.read<AuthService>();
+      await authService.signInWithEmailPassword(
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      final nextRoute = await authService.determineInitialRoute(waitDuration: Duration.zero);
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, nextRoute);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sign-in error: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,35 +120,44 @@ class LoginScreen extends StatelessWidget {
                 margin: EdgeInsets.zero,
                 child: Column(
                   children: [
-                    const TextField(
-                      decoration: InputDecoration(
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
                         labelText: 'Email Address',
                         prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
-                    const TextField(
+                    TextField(
+                      controller: _passwordController,
                       obscureText: true,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Password',
                         prefixIcon: Icon(Icons.lock_outline, color: AppColors.textSecondary),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, AppRoutes.ownerHome);
-                      },
-                      child: const Text('Sign In with Email'),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, AppRoutes.ownerHome);
-                      },
-                      icon: const Icon(Icons.g_mobiledata, size: 28),
-                      label: const Text('Sign In with Google'),
-                    ),
+
+                    if (_isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      )
+                    else ...[
+                      ElevatedButton(
+                        onPressed: _handleEmailSignIn,
+                        child: const Text('Sign In with Email'),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      OutlinedButton.icon(
+                        onPressed: _handleGoogleSignIn,
+                        icon: const Icon(Icons.g_mobiledata, size: 28),
+                        label: const Text('Continue with Google'),
+                      ),
+                    ],
                   ],
                 ),
               ),
