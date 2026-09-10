@@ -22,27 +22,28 @@ class AuthService extends ChangeNotifier {
     _initializeAuth();
   }
 
-  FirebaseAuth get _firebaseAuth {
+  FirebaseAuth? get _firebaseAuth {
     if (_auth == null && Firebase.apps.isNotEmpty) {
       _auth = FirebaseAuth.instance;
     }
-    return _auth ?? FirebaseAuth.instance;
+    return _auth;
   }
 
-  FirebaseFirestore get _firebaseFirestore {
+  FirebaseFirestore? get _firebaseFirestore {
     if (_firestore == null && Firebase.apps.isNotEmpty) {
       _firestore = FirebaseFirestore.instance;
     }
-    return _firestore ?? FirebaseFirestore.instance;
+    return _firestore;
   }
 
   bool get isInitialized => _isInitialized;
-  User? get currentUser => _currentUser ?? (_firebaseAuth.currentUser);
+  User? get currentUser => _currentUser ?? (_firebaseAuth?.currentUser);
   UserModel? get currentUserModel => _currentUserModel;
   bool get isAuthenticated => currentUser != null;
   String get userRole => _currentUserModel?.role ?? 'owner';
 
-  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
+  Stream<User?> get authStateChanges =>
+      _firebaseAuth?.authStateChanges() ?? const Stream.empty();
 
   void _initializeAuth() {
     try {
@@ -75,27 +76,42 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _fetchUserProfile(String uid) async {
+    final firestore = _firebaseFirestore;
+    if (firestore == null) return;
+
     try {
-      final doc = await _firebaseFirestore.collection('users').doc(uid).get();
+      final doc = await firestore
+          .collection('users')
+          .doc(uid)
+          .get()
+          .timeout(const Duration(seconds: 4));
       if (doc.exists) {
         _currentUserModel = UserModel.fromFirestore(doc);
       } else {
         _currentUserModel = UserModel(
           id: uid,
-          name: _currentUser?.displayName ?? 'Pet Owner',
-          email: _currentUser?.email ?? '',
-          role: 'owner',
-          createdAt: DateTime.now(),
+          name: _currentUserModel?.name ?? _currentUser?.displayName ?? 'Pet Owner',
+          email: _currentUserModel?.email ?? _currentUser?.email ?? '',
+          role: _currentUserModel?.role ?? 'owner',
+          branchId: _currentUserModel?.branchId,
+          createdAt: _currentUserModel?.createdAt ?? DateTime.now(),
         );
       }
       notifyListeners();
     } catch (e) {
-      debugPrint('AuthService: Error fetching user profile: $e');
+      debugPrint('AuthService: Profile fetch note: $e');
+      // Fallback in-memory profile so navigation works even if Firestore is not yet seeded
+      _currentUserModel ??= UserModel(
+        id: uid,
+        name: _currentUser?.displayName ?? 'Pet Owner',
+        email: _currentUser?.email ?? '',
+        role: 'owner',
+        createdAt: DateTime.now(),
+      );
     }
   }
 
   /// Determines the appropriate destination route based on authentication and user role.
-  /// Used by SplashScreen after waiting briefly.
   Future<String> determineInitialRoute({Duration waitDuration = const Duration(milliseconds: 1800)}) async {
     if (waitDuration > Duration.zero) {
       await Future.delayed(waitDuration);
@@ -116,17 +132,22 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // --- Real Firebase Auth Actions ---
+  // --- Real Firebase Auth Actions with Timeouts and Error Handling ---
 
   Future<void> signInWithGoogle() async {
     final auth = _firebaseAuth;
+    if (auth == null) {
+      throw Exception('Firebase is not initialized.');
+    }
     UserCredential userCredential;
 
     if (kIsWeb) {
       final GoogleAuthProvider googleProvider = GoogleAuthProvider();
       googleProvider.addScope('email');
       googleProvider.addScope('profile');
-      userCredential = await auth.signInWithPopup(googleProvider);
+      userCredential = await auth
+          .signInWithPopup(googleProvider)
+          .timeout(const Duration(seconds: 45));
     } else {
       final GoogleSignIn googleSignIn = GoogleSignIn();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
@@ -139,25 +160,56 @@ class AuthService extends ChangeNotifier {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      userCredential = await auth.signInWithCredential(credential);
+      userCredential = await auth
+          .signInWithCredential(credential)
+          .timeout(const Duration(seconds: 20));
     }
 
     _currentUser = userCredential.user;
     if (_currentUser != null) {
       final firestore = _firebaseFirestore;
-      final doc = await firestore.collection('users').doc(_currentUser!.uid).get();
-      if (!doc.exists) {
-        final newUser = UserModel(
+      if (firestore != null) {
+        try {
+          final doc = await firestore
+              .collection('users')
+              .doc(_currentUser!.uid)
+              .get()
+              .timeout(const Duration(seconds: 4));
+          if (!doc.exists) {
+            final newUser = UserModel(
+              id: _currentUser!.uid,
+              name: _currentUser!.displayName ?? 'Pet Owner',
+              email: _currentUser!.email ?? '',
+              role: 'owner',
+              createdAt: DateTime.now(),
+            );
+            await firestore
+                .collection('users')
+                .doc(_currentUser!.uid)
+                .set(newUser.toMap())
+                .timeout(const Duration(seconds: 4));
+            _currentUserModel = newUser;
+          } else {
+            _currentUserModel = UserModel.fromFirestore(doc);
+          }
+        } catch (e) {
+          debugPrint('Firestore sync notice: $e');
+          _currentUserModel ??= UserModel(
+            id: _currentUser!.uid,
+            name: _currentUser!.displayName ?? 'Pet Owner',
+            email: _currentUser!.email ?? '',
+            role: 'owner',
+            createdAt: DateTime.now(),
+          );
+        }
+      } else {
+        _currentUserModel ??= UserModel(
           id: _currentUser!.uid,
           name: _currentUser!.displayName ?? 'Pet Owner',
           email: _currentUser!.email ?? '',
           role: 'owner',
           createdAt: DateTime.now(),
         );
-        await firestore.collection('users').doc(_currentUser!.uid).set(newUser.toMap());
-        _currentUserModel = newUser;
-      } else {
-        _currentUserModel = UserModel.fromFirestore(doc);
       }
     }
     notifyListeners();
@@ -168,10 +220,16 @@ class AuthService extends ChangeNotifier {
     required String password,
   }) async {
     final auth = _firebaseAuth;
-    final credential = await auth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    if (auth == null) {
+      throw Exception('Firebase is not initialized.');
+    }
+    final credential = await auth
+        .signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        )
+        .timeout(const Duration(seconds: 12));
+
     _currentUser = credential.user;
     if (_currentUser != null) {
       await _fetchUserProfile(_currentUser!.uid);
@@ -187,12 +245,18 @@ class AuthService extends ChangeNotifier {
     String? branchId,
   }) async {
     final auth = _firebaseAuth;
+    if (auth == null) {
+      throw Exception('Firebase is not initialized.');
+    }
     final firestore = _firebaseFirestore;
 
-    final credential = await auth.createUserWithEmailAndPassword(
-      email: email,
-      password: password,
-    );
+    final credential = await auth
+        .createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        )
+        .timeout(const Duration(seconds: 12));
+
     final user = credential.user;
     if (user != null) {
       final newUser = UserModel(
@@ -203,15 +267,28 @@ class AuthService extends ChangeNotifier {
         branchId: branchId,
         createdAt: DateTime.now(),
       );
-      await firestore.collection('users').doc(user.uid).set(newUser.toMap());
+
       _currentUser = user;
       _currentUserModel = newUser;
+
+      // Attempt to save profile to Firestore with timeout so it never blocks registration or navigation
+      if (firestore != null) {
+        try {
+          await firestore
+              .collection('users')
+              .doc(user.uid)
+              .set(newUser.toMap())
+              .timeout(const Duration(seconds: 3));
+        } catch (e) {
+          debugPrint('Firestore registration notice (non-blocking): $e');
+        }
+      }
     }
     notifyListeners();
   }
 
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
+    await _firebaseAuth?.signOut();
     _currentUser = null;
     _currentUserModel = null;
     notifyListeners();

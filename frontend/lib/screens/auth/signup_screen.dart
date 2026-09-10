@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -39,7 +41,10 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isLoading = true);
     try {
       final authService = context.read<AuthService>();
-      await authService.signInWithGoogle();
+      await authService.signInWithGoogle().timeout(
+            const Duration(seconds: 45),
+            onTimeout: () => throw TimeoutException('Google Sign-In timed out. Please try again.'),
+          );
 
       if (!mounted) return;
 
@@ -47,12 +52,26 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       Navigator.pushReplacementNamed(context, nextRoute);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String message = e.message ?? 'Authentication error occurred.';
+      if (e.code == 'popup-closed-by-user') {
+        message = 'Google sign-in popup was closed.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Google Sign-Up error: $e'),
+          content: Text('Google Sign-Up: $e'),
           backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
@@ -108,6 +127,9 @@ class _SignupScreenState extends State<SignupScreen> {
         password: password,
         role: _selectedRole,
         branchId: branchId.isNotEmpty ? branchId : null,
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Registration timed out. Please try again.'),
       );
 
       if (!mounted) return;
@@ -116,12 +138,32 @@ class _SignupScreenState extends State<SignupScreen> {
       if (!mounted) return;
 
       Navigator.pushReplacementNamed(context, nextRoute);
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String message = e.message ?? 'An authentication error occurred.';
+      if (e.code == 'email-already-in-use') {
+        message = 'This email is already registered. Please sign in or use a different email.';
+      } else if (e.code == 'weak-password') {
+        message = 'The password is too weak. Please use at least 6 characters.';
+      } else if (e.code == 'operation-not-allowed') {
+        message = 'Email/Password sign-in is disabled in Firebase Console. Please enable it under Authentication > Sign-in method.';
+      } else if (e.code == 'invalid-email') {
+        message = 'The email address is invalid.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 5),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Registration error: $e'),
+          content: Text('Registration note: $e'),
           backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
         ),
       );
     } finally {
