@@ -1,154 +1,197 @@
 import 'package:flutter/material.dart';
-import '../../routes/app_routes.dart';
-import '../../utils/constants.dart';
-import '../../widgets/custom_card.dart';
+import 'package:provider/provider.dart';
 
-class SplashScreen extends StatelessWidget {
+import '../../routes/app_routes.dart';
+import '../../services/auth_service.dart';
+import '../../utils/constants.dart';
+
+/// DAY 2 — Splash Screen & Auth State Routing
+/// - Centered white circular badge with pet icon
+/// - "VetCare" large bold title
+/// - "Centralized Veterinary Medical Records" muted tagline
+/// - Static bottom branding badges: "Multi-Branch Network Ready", "Single ID", "Cross-Clinic"
+/// - Automated auth state routing via AuthService (waits briefly, checks session & role)
+class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthAndNavigate();
+  }
+
+  Future<void> _checkAuthAndNavigate() async {
+    try {
+      final authService = context.read<AuthService>();
+      final destinationRoute = await authService.determineInitialRoute();
+
+      if (!mounted) return;
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        destinationRoute,
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('Splash routing notice: $e');
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.login,
+          (route) => false,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: AppSpacing.lg),
-
-              // Brand Icon Badge
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: AppShadows.buttonShadow,
-                ),
-                child: const Icon(
-                  Icons.pets,
-                  size: 48,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-
-              // Brand Title
-              Text(
-                'VetCare',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-
-              // Subtitle
-              Text(
-                'Centralized Veterinary Medical Records',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-
-              Text(
-                'A pet\'s medical history that follows them across branches',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Primary CTA
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.login);
-                },
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Get Started (Login)'),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              // Day 1 Navigation Skeleton Test Suite
-              CustomCard(
+        child: Column(
+          children: [
+            // Centered Branding Block
+            Expanded(
+              child: Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.route, color: AppColors.primary, size: 20),
+                    // Centered White Circular Badge with Pet Icon
+                    Container(
+                      width: 110,
+                      height: 110,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.surface,
+                        border: Border.all(color: AppColors.border, width: 1.5),
+                        boxShadow: AppShadows.subtleCard,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.pets,
+                          size: 56,
+                          color: AppColors.primary,
                         ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          'Day 1 Route Verification',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // Large Bold Title
+                    const Text(
+                      'VetCare',
+                      style: TextStyle(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
-                    const Text(
-                      'Tap any route below to verify the 12-screen navigation skeleton:',
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
 
-                    const Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _RouteChip(label: 'Login', route: AppRoutes.login),
-                        _RouteChip(label: 'Signup', route: AppRoutes.signup),
-                        _RouteChip(label: 'Owner Home', route: AppRoutes.ownerHome),
-                        _RouteChip(label: 'Add Pet', route: AppRoutes.addPet),
-                        _RouteChip(label: 'Pet Profile', route: AppRoutes.petProfile),
-                        _RouteChip(label: 'Vaccinations', route: AppRoutes.vaccinations),
-                        _RouteChip(label: 'Documents', route: AppRoutes.documents),
-                        _RouteChip(label: 'Vet Search', route: AppRoutes.vetSearch),
-                        _RouteChip(label: 'Vet Follow-ups', route: AppRoutes.vetFollowups),
-                        _RouteChip(label: 'Add Treatment', route: AppRoutes.addTreatment),
-                        _RouteChip(label: 'Admin Panel', route: AppRoutes.admin),
-                      ],
+                    // Tagline in Muted Text
+                    const Text(
+                      'Centralized Veterinary Medical Records',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // Subtle indicator while auth check completes
+                    const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // Bottom Static Branding Badges
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Static Badge 1: Multi-Branch Network Ready
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(color: AppColors.border, width: 1),
+                      boxShadow: AppShadows.subtleCard,
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.hub_outlined,
+                          size: 15,
+                          color: AppColors.primary,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Multi-Branch Network Ready',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // Static Badges 2: Two Small Pill Tags ("Single ID" and "Cross-Clinic")
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildPillTag('Single ID'),
+                      const SizedBox(width: AppSpacing.sm),
+                      _buildPillTag('Cross-Clinic'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-}
 
-class _RouteChip extends StatelessWidget {
-  final String label;
-  final String route;
-
-  const _RouteChip({required this.label, required this.route});
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      backgroundColor: AppColors.surface,
-      surfaceTintColor: Colors.transparent,
-      side: const BorderSide(color: AppColors.border),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+  Widget _buildPillTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.border, width: 1),
       ),
-      onPressed: () {
-        Navigator.pushNamed(context, route);
-      },
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+        ),
+      ),
     );
   }
 }

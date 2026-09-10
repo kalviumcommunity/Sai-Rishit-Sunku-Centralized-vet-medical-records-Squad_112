@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../../routes/app_routes.dart';
+import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_card.dart';
 
@@ -8,16 +11,53 @@ class OwnerHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Pets'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
-          ),
-        ],
-      ),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          title: const Text('My Pets'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none),
+              onPressed: () {},
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout_outlined),
+              tooltip: 'Sign Out',
+              onPressed: () async {
+                final shouldLogout = await showDialog<bool>(
+                  context: context,
+                  builder: (dialogCtx) => AlertDialog(
+                    title: const Text('Sign Out'),
+                    content: const Text('Are you sure you want to sign out of VetCare?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogCtx, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogCtx, true),
+                        child: const Text('Sign Out', style: TextStyle(color: AppColors.error)),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (shouldLogout == true && context.mounted) {
+                  await context.read<AuthService>().signOut();
+                  if (context.mounted) {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.login,
+                      (route) => false,
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -146,6 +186,7 @@ class OwnerHomeScreen extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Register Pet'),
       ),
-    );
-  }
+    ),
+  );
+}
 }
