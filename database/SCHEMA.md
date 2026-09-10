@@ -107,6 +107,13 @@ Stores profile data for pet owners, clinic veterinarians, and network administra
 | `branchId` | `string` | `String?` | **Yes** | Clinic branch where the vet works. Null for `'owner'` or global `'admin'`. |
 | `createdAt` | `timestamp` | `DateTime` | No | Account registration timestamp (`FieldValue.serverTimestamp()`) |
 
+#### Auth Provider Parity (Email/Password & Google Sign-In)
+- **Unified Document Structure**: The `users` collection structure is **identical** regardless of whether the user authenticated via Email/Password or Google Sign-In (`google.com`).
+- **UID as Single Source of Truth**: Document ID is strictly `request.auth.uid`. There is no auxiliary collection or separate schema branch (e.g., no `google_users` or conditional fields like `isGoogleUser`).
+- **Security & Privilege Escalation Protection**:
+  - `read`: Users can read only their own document (`request.auth.uid == userId`).
+  - `update`: While users can update their profile information, they **cannot modify their `role` field** (`request.resource.data.role == resource.data.role`). This prevents client-side privilege escalation (e.g. an owner elevating themselves to admin or vet).
+
 ---
 
 ### 2. `pets`

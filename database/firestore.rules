@@ -1,16 +1,58 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ============================================================================
-    // VETCARE SECURE BASELINE (DAY 1)
-    // ============================================================================
-    // Baseline security posture: Default Deny All.
-    // Scoped rules for each collection (users, pets, treatments, vaccinations,
-    // branches, medical_documents) will be layered in progressively.
-    // ============================================================================
 
+    // ============================================================================
+    // HELPER FUNCTIONS
+    // ============================================================================
+    
+    // Checks if the incoming request is authenticated with Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Verifies the authenticated user's UID matches the target document ID
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================================================
+    // USERS COLLECTION (DAY 2)
+    // ============================================================================
+    // - Document ID matches Firebase Auth UID (unified for Email and Google Auth).
+    // - Users can read and write only their own profile document.
+    // - Role escalation protection: client updates cannot alter existing 'role'.
+    // ============================================================================
+    match /users/{userId} {
+      // Read: Authenticated user can ONLY read their own document
+      allow read: if isOwner(userId);
+
+      // Create: Authenticated user can only create their own document with valid role
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['name', 'email', 'role', 'createdAt'])
+        && request.resource.data.role in ['owner', 'vet', 'admin']
+        && request.resource.data.name is string
+        && request.resource.data.email is string;
+
+      // Update: Authenticated user can update profile fields, but CANNOT modify their role.
+      // Enforced by: request.resource.data.role == resource.data.role
+      // This strictly prevents privilege escalation from client-side writes.
+      allow update: if isOwner(userId)
+        && request.resource.data.role == resource.data.role;
+
+      // Delete: Prevent client-side deletion (administrative maintenance only)
+      allow delete: if false;
+    }
+
+    // ============================================================================
+    // DEFAULT DENY ALL (PROGRESSIVE SCOPING)
+    // ============================================================================
+    // Remaining collections (pets, treatments, vaccinations, branches, medical_documents)
+    // will be layered in progressively in subsequent milestones.
+    // ============================================================================
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
