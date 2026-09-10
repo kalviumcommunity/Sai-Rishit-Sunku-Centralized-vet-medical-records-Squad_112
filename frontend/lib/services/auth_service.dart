@@ -1,56 +1,217 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 
-/// Authentication service contract and placeholder implementation.
-/// Will be hooked to FirebaseAuth and GoogleSignIn during Auth implementation.
+import '../models/user_model.dart';
+import '../routes/app_routes.dart';
+
+/// Authentication Service handling Firebase Auth state, role retrieval, and session flow.
 class AuthService extends ChangeNotifier {
-  bool _isAuthenticated = false;
-  String? _userId;
-  String? _userRole; // 'owner', 'vet', 'admin'
+  FirebaseAuth? _auth;
+  FirebaseFirestore? _firestore;
+  StreamSubscription<User?>? _authSubscription;
 
-  bool get isAuthenticated => _isAuthenticated;
-  String? get userId => _userId;
-  String? get userRole => _userRole;
+  User? _currentUser;
+  UserModel? _currentUserModel;
+  bool _isInitialized = false;
 
-  Future<bool> signInWithEmailPassword({
+  // Mock / demo fallback support (when Firebase is not yet configured with google-services.json)
+  bool _mockLoggedIn = false;
+  String _mockRole = 'owner'; // 'owner' | 'vet' | 'admin'
+
+  AuthService() {
+    _initializeAuth();
+  }
+
+  bool get isInitialized => _isInitialized;
+  User? get currentUser => _currentUser;
+  UserModel? get currentUserModel => _currentUserModel;
+  bool get isAuthenticated => _auth != null ? _currentUser != null : _mockLoggedIn;
+  String get userRole => _currentUserModel?.role ?? _mockRole;
+
+  Stream<User?> get authStateChanges {
+    if (_auth != null) {
+      return _auth!.authStateChanges();
+    }
+    // Stream for mock state
+    return Stream.value(null);
+  }
+
+  void _initializeAuth() {
+    try {
+      if (Firebase.apps.isNotEmpty) {
+        _auth = FirebaseAuth.instance;
+        _firestore = FirebaseFirestore.instance;
+
+        _authSubscription = _auth!.authStateChanges().listen((User? user) async {
+          _currentUser = user;
+          if (user != null) {
+            await _fetchUserProfile(user.uid);
+          } else {
+            _currentUserModel = null;
+          }
+          _isInitialized = true;
+          notifyListeners();
+        });
+      } else {
+        _isInitialized = true;
+      }
+    } catch (e) {
+      debugPrint('AuthService: Firebase not initialized yet, using fallback mode: $e');
+      _isInitialized = true;
+    }
+  }
+
+  Future<void> _fetchUserProfile(String uid) async {
+    try {
+      if (_firestore != null) {
+        final doc = await _firestore!.collection('users').doc(uid).get();
+        if (doc.exists) {
+          _currentUserModel = UserModel.fromFirestore(doc);
+        } else {
+          // Default fallback profile if user doc is being created
+          _currentUserModel = UserModel(
+            id: uid,
+            name: _currentUser?.displayName ?? 'Pet Owner',
+            email: _currentUser?.email ?? '',
+            role: 'owner',
+            createdAt: DateTime.now(),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('AuthService: Error fetching user profile: $e');
+    }
+  }
+
+  /// Determines the appropriate destination route based on authentication and user role.
+  /// Used by SplashScreen after waiting briefly.
+  Future<String> determineInitialRoute({Duration waitDuration = const Duration(milliseconds: 1800)}) async {
+    // 1. Splash screen branding wait time
+    await Future.delayed(waitDuration);
+
+    // 2. Check login status
+    if (!isAuthenticated) {
+      return AppRoutes.login;
+    }
+
+    // 3. Role-based routing
+    switch (userRole) {
+      case 'vet':
+        return AppRoutes.vetSearch;
+      case 'admin':
+        return AppRoutes.admin;
+      case 'owner':
+      default:
+        return AppRoutes.ownerHome;
+    }
+  }
+
+  // --- Auth Actions ---
+
+  Future<void> signInWithEmailPassword({
     required String email,
     required String password,
   }) async {
-    // Placeholder - will integrate FirebaseAuth.instance.signInWithEmailAndPassword
-    await Future.delayed(const Duration(milliseconds: 500));
-    _isAuthenticated = true;
-    _userId = 'demo_user_123';
-    _userRole = 'owner';
+    if (_auth != null) {
+      final credential = await _auth!.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      _currentUser = credential.user;
+      if (_currentUser != null) {
+        await _fetchUserProfile(_currentUser!.uid);
+      }
+    } else {
+      // Mock fallback
+      _mockLoggedIn = true;
+      _mockRole = email.contains('vet') ? 'vet' : (email.contains('admin') ? 'admin' : 'owner');
+      _currentUserModel = UserModel(
+        id: 'mock_uid_123',
+        name: 'Demo User',
+        email: email,
+        role: _mockRole,
+        createdAt: DateTime.now(),
+      );
+    }
     notifyListeners();
-    return true;
   }
 
-  Future<bool> signInWithGoogle() async {
-    // Placeholder - will integrate GoogleSignIn and FirebaseAuth GoogleAuthProvider
-    await Future.delayed(const Duration(milliseconds: 500));
-    _isAuthenticated = true;
-    _userId = 'demo_google_user_456';
-    _userRole = 'owner';
-    notifyListeners();
-    return true;
-  }
-
-  Future<bool> registerWithEmailPassword({
+  Future<void> registerWithEmailPassword({
     required String email,
     required String password,
+    required String name,
     required String role,
+    String? branchId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    _isAuthenticated = true;
-    _userId = 'demo_registered_user_789';
-    _userRole = role;
+    if (_auth != null && _firestore != null) {
+      final credential = await _auth!.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = credential.user;
+      if (user != null) {
+        final newUser = UserModel(
+          id: user.uid,
+          name: name,
+          email: email,
+          role: role,
+          branchId: branchId,
+          createdAt: DateTime.now(),
+        );
+        await _firestore!.collection('users').doc(user.uid).set(newUser.toMap());
+        _currentUser = user;
+        _currentUserModel = newUser;
+      }
+    } else {
+      // Mock fallback
+      _mockLoggedIn = true;
+      _mockRole = role;
+      _currentUserModel = UserModel(
+        id: 'mock_registered_uid',
+        name: name,
+        email: email,
+        role: role,
+        branchId: branchId,
+        createdAt: DateTime.now(),
+      );
+    }
     notifyListeners();
-    return true;
   }
 
   Future<void> signOut() async {
-    _isAuthenticated = false;
-    _userId = null;
-    _userRole = null;
+    if (_auth != null) {
+      await _auth!.signOut();
+    }
+    _mockLoggedIn = false;
+    _currentUser = null;
+    _currentUserModel = null;
     notifyListeners();
+  }
+
+  /// Testing helper: set mock auth state to test splash routing across roles
+  void setMockAuthState({required bool loggedIn, String role = 'owner'}) {
+    _mockLoggedIn = loggedIn;
+    _mockRole = role;
+    if (loggedIn) {
+      _currentUserModel = UserModel(
+        id: 'test_user_id',
+        name: 'Test $role',
+        email: 'test_$role@vetcare.com',
+        role: role,
+        createdAt: DateTime.now(),
+      );
+    } else {
+      _currentUserModel = null;
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
   }
 }
