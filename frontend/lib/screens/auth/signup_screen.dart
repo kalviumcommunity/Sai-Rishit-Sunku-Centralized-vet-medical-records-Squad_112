@@ -22,6 +22,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   String _selectedRole = 'owner'; // 'owner' or 'vet'
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -132,142 +134,279 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Create Account'),
+        elevation: 0,
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Join VetCare',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                'Register as a Pet Owner or Veterinary Professional',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-
-              CustomCard(
-                margin: EdgeInsets.zero,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Role Selector
-                    Text(
-                      'I am registering as:',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(
-                          value: 'owner',
-                          label: Text('Pet Owner'),
-                          icon: Icon(Icons.pets),
-                        ),
-                        ButtonSegment(
-                          value: 'vet',
-                          label: Text('Veterinarian'),
-                          icon: Icon(Icons.medical_services_outlined),
-                        ),
-                      ],
-                      selected: {_selectedRole},
-                      onSelectionChanged: (newSelection) {
-                        setState(() {
-                          _selectedRole = newSelection.first;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-
-                    TextField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    TextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email Address',
-                        prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
-                      ),
-                    ),
-
-                    // Branch ID field if veterinarian role is selected
-                    if (_selectedRole == 'vet') ...[
-                      const SizedBox(height: AppSpacing.md),
-                      TextField(
-                        controller: _branchController,
-                        decoration: const InputDecoration(
-                          labelText: 'Assigned Clinic Branch ID',
-                          hintText: 'e.g. branch_central_01',
-                          prefixIcon: Icon(Icons.apartment, color: AppColors.textSecondary),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: AppSpacing.md),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password (min 6 chars)',
-                        prefixIcon: Icon(Icons.lock_outline, color: AppColors.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    TextField(
-                      controller: _confirmPasswordController,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Confirm Password',
-                        prefixIcon: Icon(Icons.lock_reset_outlined, color: AppColors.textSecondary),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-
-                    if (_isLoading)
-                      const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          child: CircularProgressIndicator(color: AppColors.primary),
-                        ),
-                      )
-                    else ...[
-                      ElevatedButton(
-                        onPressed: _handleRegister,
-                        child: const Text('Create Account'),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      OutlinedButton.icon(
-                        onPressed: _handleGoogleSignUp,
-                        icon: const Icon(Icons.g_mobiledata, size: 28),
-                        label: const Text('Continue with Google'),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Already have an account? ', style: TextStyle(color: AppColors.textSecondary)),
-                  TextButton(
-                    onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
-                    child: const Text('Sign In'),
+                  // Top Brand Icon Badge
+                  Center(
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.border, width: 1.5),
+                        boxShadow: AppShadows.subtleCard,
+                      ),
+                      child: const Center(
+                        child: Icon(
+                          Icons.pets,
+                          size: 32,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Header Titles
+                  Text(
+                    'Join VetCare',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Register as a Pet Owner or Veterinary Professional',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Form Container Card
+                  CustomCard(
+                    margin: EdgeInsets.zero,
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Role Selector Header
+                        Text(
+                          'Select Account Role',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+
+                        // Segmented Role Picker
+                        SegmentedButton<String>(
+                          segments: const [
+                            ButtonSegment(
+                              value: 'owner',
+                              label: Text('Pet Owner'),
+                              icon: Icon(Icons.pets, size: 16),
+                            ),
+                            ButtonSegment(
+                              value: 'vet',
+                              label: Text('Veterinarian'),
+                              icon: Icon(Icons.medical_services_outlined, size: 16),
+                            ),
+                          ],
+                          selected: {_selectedRole},
+                          onSelectionChanged: (newSelection) {
+                            setState(() {
+                              _selectedRole = newSelection.first;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+
+                        // Full Name
+                        TextField(
+                          controller: _nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Full Name',
+                            hintText: 'e.g. Sarah Jenkins',
+                            prefixIcon: Icon(Icons.person_outline, color: AppColors.textSecondary),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
+                        // Email Address
+                        TextField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            labelText: 'Email Address',
+                            hintText: 'name@example.com',
+                            prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                          ),
+                        ),
+
+                        // Branch ID field if veterinarian role is selected
+                        if (_selectedRole == 'vet') ...[
+                          const SizedBox(height: AppSpacing.md),
+                          TextField(
+                            controller: _branchController,
+                            decoration: const InputDecoration(
+                              labelText: 'Assigned Clinic Branch ID',
+                              hintText: 'e.g. branch_central_01',
+                              prefixIcon: Icon(Icons.apartment, color: AppColors.textSecondary),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: AppSpacing.md),
+
+                        // Password Field with Toggle
+                        TextField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: 'Password (min 6 chars)',
+                            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: AppColors.textSecondary,
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+
+                        // Confirm Password Field with Toggle
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: _obscureConfirmPassword,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            prefixIcon: const Icon(Icons.lock_reset_outlined, color: AppColors.textSecondary),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                color: AppColors.textSecondary,
+                                size: 20,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+
+                        if (_isLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 14),
+                              child: CircularProgressIndicator(color: AppColors.primary),
+                            ),
+                          )
+                        else ...[
+                          ElevatedButton.icon(
+                            onPressed: _handleRegister,
+                            icon: const Icon(Icons.arrow_forward, size: 18),
+                            label: const Text('Create Account'),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+
+                          // Elegant Divider
+                          const Row(
+                            children: [
+                              Expanded(child: Divider(color: AppColors.border)),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                                child: Text(
+                                  'or',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: AppColors.border)),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+
+                          // Google Sign-Up Button
+                          OutlinedButton.icon(
+                            onPressed: _handleGoogleSignUp,
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: AppColors.surface,
+                              side: const BorderSide(color: AppColors.border, width: 1.2),
+                              foregroundColor: AppColors.textPrimary,
+                            ),
+                            icon: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.primaryLight,
+                              ),
+                              child: const Icon(Icons.g_mobiledata, color: AppColors.primary, size: 22),
+                            ),
+                            label: const Text(
+                              'Sign up with Google',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.lg),
+
+                  // Bottom Redirect Link
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text(
+                        'Already have an account? ',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'Sign In',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),
