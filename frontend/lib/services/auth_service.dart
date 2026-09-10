@@ -18,33 +18,42 @@ class AuthService extends ChangeNotifier {
   UserModel? _currentUserModel;
   bool _isInitialized = false;
 
-  // Mock / demo fallback support (when Firebase is not yet configured with google-services.json)
-  bool _mockLoggedIn = false;
-  String _mockRole = 'owner'; // 'owner' | 'vet' | 'admin'
-
   AuthService() {
     _initializeAuth();
   }
 
-  bool get isInitialized => _isInitialized;
-  User? get currentUser => _currentUser;
-  UserModel? get currentUserModel => _currentUserModel;
-  bool get isAuthenticated => _auth != null ? _currentUser != null : _mockLoggedIn;
-  String get userRole => _currentUserModel?.role ?? _mockRole;
-
-  Stream<User?> get authStateChanges {
-    if (_auth != null) {
-      return _auth!.authStateChanges();
+  FirebaseAuth get _firebaseAuth {
+    if (_auth == null && Firebase.apps.isNotEmpty) {
+      _auth = FirebaseAuth.instance;
     }
-    // Stream for mock state
-    return Stream.value(null);
+    return _auth ?? FirebaseAuth.instance;
   }
+
+  FirebaseFirestore get _firebaseFirestore {
+    if (_firestore == null && Firebase.apps.isNotEmpty) {
+      _firestore = FirebaseFirestore.instance;
+    }
+    return _firestore ?? FirebaseFirestore.instance;
+  }
+
+  bool get isInitialized => _isInitialized;
+  User? get currentUser => _currentUser ?? (_firebaseAuth.currentUser);
+  UserModel? get currentUserModel => _currentUserModel;
+  bool get isAuthenticated => currentUser != null;
+  String get userRole => _currentUserModel?.role ?? 'owner';
+
+  Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
   void _initializeAuth() {
     try {
       if (Firebase.apps.isNotEmpty) {
         _auth = FirebaseAuth.instance;
         _firestore = FirebaseFirestore.instance;
+
+        _currentUser = _auth!.currentUser;
+        if (_currentUser != null) {
+          _fetchUserProfile(_currentUser!.uid);
+        }
 
         _authSubscription = _auth!.authStateChanges().listen((User? user) async {
           _currentUser = user;
@@ -60,28 +69,26 @@ class AuthService extends ChangeNotifier {
         _isInitialized = true;
       }
     } catch (e) {
-      debugPrint('AuthService: Firebase not initialized yet, using fallback mode: $e');
+      debugPrint('AuthService: Auth init notice: $e');
       _isInitialized = true;
     }
   }
 
   Future<void> _fetchUserProfile(String uid) async {
     try {
-      if (_firestore != null) {
-        final doc = await _firestore!.collection('users').doc(uid).get();
-        if (doc.exists) {
-          _currentUserModel = UserModel.fromFirestore(doc);
-        } else {
-          // Default fallback profile if user doc is being created
-          _currentUserModel = UserModel(
-            id: uid,
-            name: _currentUser?.displayName ?? 'Pet Owner',
-            email: _currentUser?.email ?? '',
-            role: 'owner',
-            createdAt: DateTime.now(),
-          );
-        }
+      final doc = await _firebaseFirestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        _currentUserModel = UserModel.fromFirestore(doc);
+      } else {
+        _currentUserModel = UserModel(
+          id: uid,
+          name: _currentUser?.displayName ?? 'Pet Owner',
+          email: _currentUser?.email ?? '',
+          role: 'owner',
+          createdAt: DateTime.now(),
+        );
       }
+      notifyListeners();
     } catch (e) {
       debugPrint('AuthService: Error fetching user profile: $e');
     }
@@ -90,15 +97,14 @@ class AuthService extends ChangeNotifier {
   /// Determines the appropriate destination route based on authentication and user role.
   /// Used by SplashScreen after waiting briefly.
   Future<String> determineInitialRoute({Duration waitDuration = const Duration(milliseconds: 1800)}) async {
-    // 1. Splash screen branding wait time
-    await Future.delayed(waitDuration);
+    if (waitDuration > Duration.zero) {
+      await Future.delayed(waitDuration);
+    }
 
-    // 2. Check login status
     if (!isAuthenticated) {
       return AppRoutes.login;
     }
 
-    // 3. Role-based routing
     switch (userRole) {
       case 'vet':
         return AppRoutes.vetSearch;
@@ -110,89 +116,65 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  // --- Auth Actions ---
+  // --- Real Firebase Auth Actions ---
+
+  Future<void> signInWithGoogle() async {
+    final auth = _firebaseAuth;
+    UserCredential userCredential;
+
+    if (kIsWeb) {
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+      userCredential = await auth.signInWithPopup(googleProvider);
+    } else {
+      final GoogleSignIn googleSignIn = GoogleSignIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        // User cancelled Google sign-in dialog
+        return;
+      }
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      userCredential = await auth.signInWithCredential(credential);
+    }
+
+    _currentUser = userCredential.user;
+    if (_currentUser != null) {
+      final firestore = _firebaseFirestore;
+      final doc = await firestore.collection('users').doc(_currentUser!.uid).get();
+      if (!doc.exists) {
+        final newUser = UserModel(
+          id: _currentUser!.uid,
+          name: _currentUser!.displayName ?? 'Pet Owner',
+          email: _currentUser!.email ?? '',
+          role: 'owner',
+          createdAt: DateTime.now(),
+        );
+        await firestore.collection('users').doc(_currentUser!.uid).set(newUser.toMap());
+        _currentUserModel = newUser;
+      } else {
+        _currentUserModel = UserModel.fromFirestore(doc);
+      }
+    }
+    notifyListeners();
+  }
 
   Future<void> signInWithEmailPassword({
     required String email,
     required String password,
   }) async {
-    if (_auth != null) {
-      final credential = await _auth!.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      _currentUser = credential.user;
-      if (_currentUser != null) {
-        await _fetchUserProfile(_currentUser!.uid);
-      }
-    } else {
-      // Mock fallback
-      _mockLoggedIn = true;
-      _mockRole = email.contains('vet') ? 'vet' : (email.contains('admin') ? 'admin' : 'owner');
-      _currentUserModel = UserModel(
-        id: 'mock_uid_123',
-        name: 'Demo User',
-        email: email,
-        role: _mockRole,
-        createdAt: DateTime.now(),
-      );
-    }
-    notifyListeners();
-  }
-
-  Future<void> signInWithGoogle() async {
-    if (_auth != null) {
-      UserCredential userCredential;
-      if (kIsWeb) {
-        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
-        googleProvider.addScope('email');
-        googleProvider.addScope('profile');
-        userCredential = await _auth!.signInWithPopup(googleProvider);
-      } else {
-        final GoogleSignIn googleSignIn = GoogleSignIn();
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        if (googleUser == null) {
-          // User aborted Google sign-in
-          return;
-        }
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        final AuthCredential credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-        userCredential = await _auth!.signInWithCredential(credential);
-      }
-
-      _currentUser = userCredential.user;
-      if (_currentUser != null) {
-        if (_firestore != null) {
-          final doc = await _firestore!.collection('users').doc(_currentUser!.uid).get();
-          if (!doc.exists) {
-            final newUser = UserModel(
-              id: _currentUser!.uid,
-              name: _currentUser!.displayName ?? 'Pet Owner',
-              email: _currentUser!.email ?? '',
-              role: 'owner',
-              createdAt: DateTime.now(),
-            );
-            await _firestore!.collection('users').doc(_currentUser!.uid).set(newUser.toMap());
-            _currentUserModel = newUser;
-          } else {
-            _currentUserModel = UserModel.fromFirestore(doc);
-          }
-        }
-      }
-    } else {
-      // Mock fallback
-      _mockLoggedIn = true;
-      _mockRole = 'owner';
-      _currentUserModel = UserModel(
-        id: 'google_mock_uid',
-        name: 'Google User',
-        email: 'google_user@gmail.com',
-        role: 'owner',
-        createdAt: DateTime.now(),
-      );
+    final auth = _firebaseAuth;
+    final credential = await auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    _currentUser = credential.user;
+    if (_currentUser != null) {
+      await _fetchUserProfile(_currentUser!.uid);
     }
     notifyListeners();
   }
@@ -204,66 +186,34 @@ class AuthService extends ChangeNotifier {
     required String role,
     String? branchId,
   }) async {
-    if (_auth != null && _firestore != null) {
-      final credential = await _auth!.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      final user = credential.user;
-      if (user != null) {
-        final newUser = UserModel(
-          id: user.uid,
-          name: name,
-          email: email,
-          role: role,
-          branchId: branchId,
-          createdAt: DateTime.now(),
-        );
-        await _firestore!.collection('users').doc(user.uid).set(newUser.toMap());
-        _currentUser = user;
-        _currentUserModel = newUser;
-      }
-    } else {
-      // Mock fallback
-      _mockLoggedIn = true;
-      _mockRole = role;
-      _currentUserModel = UserModel(
-        id: 'mock_registered_uid',
+    final auth = _firebaseAuth;
+    final firestore = _firebaseFirestore;
+
+    final credential = await auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    final user = credential.user;
+    if (user != null) {
+      final newUser = UserModel(
+        id: user.uid,
         name: name,
         email: email,
         role: role,
         branchId: branchId,
         createdAt: DateTime.now(),
       );
+      await firestore.collection('users').doc(user.uid).set(newUser.toMap());
+      _currentUser = user;
+      _currentUserModel = newUser;
     }
     notifyListeners();
   }
 
   Future<void> signOut() async {
-    if (_auth != null) {
-      await _auth!.signOut();
-    }
-    _mockLoggedIn = false;
+    await _firebaseAuth.signOut();
     _currentUser = null;
     _currentUserModel = null;
-    notifyListeners();
-  }
-
-  /// Testing helper: set mock auth state to test splash routing across roles
-  void setMockAuthState({required bool loggedIn, String role = 'owner'}) {
-    _mockLoggedIn = loggedIn;
-    _mockRole = role;
-    if (loggedIn) {
-      _currentUserModel = UserModel(
-        id: 'test_user_id',
-        name: 'Test $role',
-        email: 'test_$role@vetcare.com',
-        role: role,
-        createdAt: DateTime.now(),
-      );
-    } else {
-      _currentUserModel = null;
-    }
     notifyListeners();
   }
 
