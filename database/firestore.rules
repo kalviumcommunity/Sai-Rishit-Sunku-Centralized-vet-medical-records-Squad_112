@@ -17,6 +17,31 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // ROLE-BASED HELPERS
+    // ============================================================================
+    
+    // Retrieves profile data for the authenticated user
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Checks if the user has veterinary privileges
+    function isVet() {
+      return isAuthenticated() && (
+        (request.auth.token.role != null && request.auth.token.role == 'vet') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'vet')
+      );
+    }
+
+    // Checks if the user has administrative privileges
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.role != null && request.auth.token.role == 'admin') ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin')
+      );
+    }
+
+    // ============================================================================
     // USERS COLLECTION (DAY 2)
     // ============================================================================
     // - Document ID matches Firebase Auth UID (unified for Email and Google Auth).
@@ -45,9 +70,53 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // PETS COLLECTION (DAY 3)
+    // ============================================================================
+    // - Owners can create, read, update, and delete their own pets (ownerId == auth.uid).
+    // - Vets and Admins can read ANY pet across clinic branches for unified record search.
+    // - Only the owner or an admin can edit or delete a pet's core profile.
+    // - Microchip ID is WRITE-ONCE: immutable after document creation.
+    // ============================================================================
+    match /pets/{petId} {
+      // Read: Owner can read their own pets.
+      // Vets and Admins can read ANY pet across branches for cross-clinic medical history lookup.
+      allow read: if isAuthenticated() && (
+        resource.data.ownerId == request.auth.uid ||
+        isVet() ||
+        isAdmin()
+      );
+
+      // Create: Owner can create pet records where ownerId matches their UID. Admin can also create.
+      allow create: if isAuthenticated() && (
+        request.resource.data.ownerId == request.auth.uid || isAdmin()
+      )
+      && request.resource.data.keys().hasAll(['name', 'species', 'breed', 'gender', 'dateOfBirth', 'microchipId', 'ownerId', 'createdAt'])
+      && request.resource.data.name is string
+      && request.resource.data.species is string
+      && request.resource.data.microchipId is string
+      && request.resource.data.microchipId.size() > 0;
+
+      // Update: Only the pet's owner or an admin can edit core pet info.
+      // Vets CANNOT alter core pet profile (vets only append treatment/vaccination records).
+      // WRITE-ONCE CONSTRAINTS:
+      // 1. microchipId is strictly immutable after creation.
+      // 2. ownerId is strictly immutable (ownership transfer requires admin approval).
+      allow update: if isAuthenticated() && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      )
+      && request.resource.data.microchipId == resource.data.microchipId
+      && request.resource.data.ownerId == resource.data.ownerId;
+
+      // Delete: Only owner or admin can remove a pet record.
+      allow delete: if isAuthenticated() && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      );
+    }
+
+    // ============================================================================
     // DEFAULT DENY ALL (PROGRESSIVE SCOPING)
     // ============================================================================
-    // Remaining collections (pets, treatments, vaccinations, branches, medical_documents)
+    // Remaining collections (treatments, vaccinations, branches, medical_documents)
     // will be layered in progressively in subsequent milestones.
     // ============================================================================
     match /{document=**} {

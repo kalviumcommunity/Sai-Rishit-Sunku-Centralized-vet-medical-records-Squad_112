@@ -1,5 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Represents a patient pet in the VetCare network.
+///
+/// Medical records (treatments, vaccinations, documents) are associated with
+/// this entity and follow the pet seamlessly across all clinic branches.
+/// The [microchipId] serves as a permanent, write-once ISO identifier.
 class PetModel {
   final String id;
   final String name;
@@ -25,6 +30,7 @@ class PetModel {
     required this.createdAt,
   });
 
+  /// Computes the pet's age in whole years.
   int get ageYears {
     final now = DateTime.now();
     int years = now.year - dateOfBirth.year;
@@ -35,6 +41,17 @@ class PetModel {
     return years > 0 ? years : 0;
   }
 
+  /// Helper parser to handle various timestamp formats safely (Timestamp, DateTime, int, or String).
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  /// Construct a [PetModel] from a plain map and a document ID.
   factory PetModel.fromMap(Map<String, dynamic> map, String id) {
     return PetModel(
       id: id,
@@ -42,18 +59,20 @@ class PetModel {
       species: map['species'] as String? ?? '',
       breed: map['breed'] as String? ?? '',
       gender: map['gender'] as String? ?? 'unknown',
-      dateOfBirth: (map['dateOfBirth'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      dateOfBirth: _parseDateTime(map['dateOfBirth']),
       microchipId: map['microchipId'] as String? ?? '',
       ownerId: map['ownerId'] as String? ?? '',
       photoUrl: map['photoUrl'] as String?,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: _parseDateTime(map['createdAt']),
     );
   }
 
+  /// Construct a [PetModel] directly from a Firestore [DocumentSnapshot].
   factory PetModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     return PetModel.fromMap(doc.data() ?? {}, doc.id);
   }
 
+  /// Convert to Firestore map representation matching schema specification.
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -68,6 +87,7 @@ class PetModel {
     };
   }
 
+  /// Create a copy with optional overridden fields.
   PetModel copyWith({
     String? id,
     String? name,
