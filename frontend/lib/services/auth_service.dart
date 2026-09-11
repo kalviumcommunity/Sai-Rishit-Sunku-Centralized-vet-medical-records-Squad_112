@@ -215,7 +215,8 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> signInWithEmailPassword({
+  /// Email & Password authentication
+  Future<void> signInWithEmail({
     required String email,
     required String password,
   }) async {
@@ -228,13 +229,21 @@ class AuthService extends ChangeNotifier {
           email: email,
           password: password,
         )
-        .timeout(const Duration(seconds: 12));
+        .timeout(const Duration(seconds: 15));
 
     _currentUser = credential.user;
     if (_currentUser != null) {
       await _fetchUserProfile(_currentUser!.uid);
     }
     notifyListeners();
+  }
+
+  /// Alias for backward compatibility
+  Future<void> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    await signInWithEmail(email: email, password: password);
   }
 
   Future<void> registerWithEmailPassword({
@@ -288,6 +297,16 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    try {
+      if (!kIsWeb) {
+        final GoogleSignIn googleSignIn = GoogleSignIn();
+        if (await googleSignIn.isSignedIn()) {
+          await googleSignIn.signOut();
+        }
+      }
+    } catch (e) {
+      debugPrint('Google sign-out notice: $e');
+    }
     await _firebaseAuth?.signOut();
     _currentUser = null;
     _currentUserModel = null;
