@@ -131,6 +131,17 @@ Stores patient profiles. Medical history follows this entity regardless of which
 | `photoUrl` | `string` | `String?` | **Yes** | Cloud Storage download URL. Null falls back to default avatar icon |
 | `createdAt` | `timestamp` | `DateTime` | No | Timestamp of pet registration |
 
+#### Microchip ID Policy & Security Rules (Day 3)
+- **Write-Once Immutability (`microchipId`)**:
+  - `microchipId` is **settable only during pet document creation** and is strictly **immutable thereafter** (`request.resource.data.microchipId == resource.data.microchipId`).
+  - *Architectural Rationale*: A microchip is a permanent, ISO-standard RFID transponder physically implanted in the pet. It does not realistically change over an animal's lifetime. Freezing it prevents accidental overwrite, fraudulent ownership disputes, and cross-branch patient identity desynchronization.
+- **Cross-Branch Vet Discovery**:
+  - `read`: Vets across *all* clinic branches have global read access to `pets` documents (`isVet()`). This enables centralized search by microchip ID or name when a pet visits any clinic branch in the network.
+  - Owners can read only their own pets (`resource.data.ownerId == request.auth.uid`).
+- **Core Info Modification Protection**:
+  - `update` / `delete`: Only the pet's registered owner (`resource.data.ownerId == request.auth.uid`) or a network administrator (`isAdmin()`) can modify or delete core pet profile details.
+  - Attending vets cannot alter core demographic fields (such as breed, species, birth date, or microchip ID); vets interact with patient records by appending new `treatments`, `vaccinations`, or `medical_documents`.
+
 ---
 
 ### 3. `treatments`
