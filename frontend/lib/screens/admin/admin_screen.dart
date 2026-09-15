@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../routes/app_routes.dart';
+import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_card.dart';
 
@@ -8,7 +11,50 @@ class AdminScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin Management Console')),
+      appBar: AppBar(
+        title: const Text('Admin Management Console'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'My Profile',
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.profile),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout_outlined),
+            tooltip: 'Sign Out',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (dialogCtx) => AlertDialog(
+                  title: const Text('Sign Out'),
+                  content: const Text('Are you sure you want to sign out?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogCtx, true),
+                      child: const Text('Sign Out', style: TextStyle(color: AppColors.error)),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true && context.mounted) {
+                await context.read<AuthService>().signOut();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.login,
+                    (route) => false,
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),

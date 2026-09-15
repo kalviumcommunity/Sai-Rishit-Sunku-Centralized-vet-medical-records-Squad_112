@@ -28,7 +28,8 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkAuthAndNavigate() async {
     try {
       final authService = context.read<AuthService>();
-      final destinationRoute = await authService.determineInitialRoute();
+      final waitDuration = authService.isAuthenticated ? Duration.zero : const Duration(milliseconds: 1800);
+      final destinationRoute = await authService.determineInitialRoute(waitDuration: waitDuration);
 
       if (!mounted) return;
 

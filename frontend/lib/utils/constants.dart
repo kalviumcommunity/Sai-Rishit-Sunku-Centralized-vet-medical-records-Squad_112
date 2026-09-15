@@ -25,6 +25,12 @@ class AppColors {
   static const Color textMuted = Color(0xFF9CA3AF);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
+  // Aesthetic Mockup Tokens
+  static const Color darkPill = Color(0xFF111827);
+  static const Color lightPill = Color(0xFFF3F4F6);
+  static const Color aestheticBorder = Color(0xFFF0F1F4);
+  static const Color aestheticBackground = Color(0xFFF6F7F9);
+
   // Status & Accents
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
@@ -33,14 +39,16 @@ class AppColors {
 }
 
 class AppRadius {
-  // Generous 14-18px corner radius on cards and buttons
+  // Generous 14-18px corner radius on cards and buttons, 32px for hero cards
   static const double card = 16.0;
+  static const double heroCard = 32.0;
   static const double button = 16.0;
   static const double input = 14.0;
   static const double small = 10.0;
   static const double pill = 999.0;
 
   static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(card));
+  static const BorderRadius heroCardRadius = BorderRadius.all(Radius.circular(heroCard));
   static const BorderRadius buttonRadius = BorderRadius.all(Radius.circular(button));
   static const BorderRadius inputRadius = BorderRadius.all(Radius.circular(input));
 }
@@ -58,6 +66,22 @@ class AppShadows {
       color: Color(0x05000000),
       blurRadius: 4,
       offset: Offset(0, 1),
+      spreadRadius: 0,
+    ),
+  ];
+
+  // Ultra-soft diffused shadow for modern aesthetic hero cards
+  static const List<BoxShadow> aestheticCard = [
+    BoxShadow(
+      color: Color(0x0D000000),
+      blurRadius: 36,
+      offset: Offset(0, 14),
+      spreadRadius: 0,
+    ),
+    BoxShadow(
+      color: Color(0x04000000),
+      blurRadius: 10,
+      offset: Offset(0, 3),
       spreadRadius: 0,
     ),
   ];

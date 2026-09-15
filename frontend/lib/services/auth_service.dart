@@ -246,6 +246,9 @@ class AuthService extends ChangeNotifier {
     await signInWithEmail(email: email, password: password);
   }
 
+  /// Email & Password registration (Day 4)
+  /// Creates user in Firebase Auth and corresponding Firestore users document:
+  /// { name, email, role, branchId, createdAt } (branchId null for owners)
   Future<void> registerWithEmailPassword({
     required String email,
     required String password,
@@ -264,36 +267,64 @@ class AuthService extends ChangeNotifier {
           email: email,
           password: password,
         )
-        .timeout(const Duration(seconds: 12));
+        .timeout(const Duration(seconds: 15));
 
     final user = credential.user;
     if (user != null) {
+      // branchId must be null for owners
+      final effectiveBranchId = (role == 'owner')
+          ? null
+          : (branchId != null && branchId.trim().isNotEmpty ? branchId.trim() : null);
+
       final newUser = UserModel(
         id: user.uid,
         name: name,
         email: email,
         role: role,
-        branchId: branchId,
+        branchId: effectiveBranchId,
         createdAt: DateTime.now(),
       );
 
       _currentUser = user;
       _currentUserModel = newUser;
 
-      // Attempt to save profile to Firestore with timeout so it never blocks registration or navigation
+      try {
+        await user.updateDisplayName(name);
+      } catch (e) {
+        debugPrint('AuthService: updateDisplayName notice: $e');
+      }
+
+      // Save user profile to Firestore with timeout
       if (firestore != null) {
         try {
           await firestore
               .collection('users')
               .doc(user.uid)
               .set(newUser.toMap())
-              .timeout(const Duration(seconds: 3));
+              .timeout(const Duration(seconds: 4));
         } catch (e) {
           debugPrint('Firestore registration notice (non-blocking): $e');
         }
       }
     }
     notifyListeners();
+  }
+
+  /// Alias for registerWithEmailPassword
+  Future<void> signUpWithEmail({
+    required String email,
+    required String password,
+    required String name,
+    required String role,
+    String? branchId,
+  }) async {
+    await registerWithEmailPassword(
+      email: email,
+      password: password,
+      name: name,
+      role: role,
+      branchId: branchId,
+    );
   }
 
   Future<void> signOut() async {

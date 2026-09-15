@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../utils/constants.dart';
-import '../../widgets/custom_card.dart';
 
 /// DAY 3 — Login Screen with Email + Google Sign-In
 /// Features:
@@ -173,9 +172,17 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.aestheticBackground,
       appBar: AppBar(
-        title: const Text('Sign In'),
+        title: const Text(
+          'Sign In',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: SafeArea(
@@ -191,18 +198,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Top Brand Icon Badge
                   Center(
                     child: Container(
-                      width: 64,
-                      height: 64,
+                      width: 72,
+                      height: 72,
                       decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
+                        color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.border, width: 1.5),
-                        boxShadow: AppShadows.subtleCard,
+                        boxShadow: AppShadows.aestheticCard,
+                        border: Border.all(color: const Color(0xFFF1F5F9), width: 2),
                       ),
                       child: const Center(
                         child: Icon(
                           Icons.pets,
-                          size: 32,
+                          size: 36,
                           color: AppColors.primary,
                         ),
                       ),
@@ -217,6 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
+                          color: AppColors.textPrimary,
                         ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
@@ -225,14 +233,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
                         ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
 
                   // Form Container Card
-                  CustomCard(
-                    margin: EdgeInsets.zero,
+                  Container(
                     padding: const EdgeInsets.all(AppSpacing.lg),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(AppRadius.heroCard),
+                      boxShadow: AppShadows.aestheticCard,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -240,10 +253,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Email Address',
                             hintText: 'name@example.com',
-                            prefixIcon: Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                            prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                            filled: true,
+                            fillColor: AppColors.lightPill,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -255,6 +274,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           decoration: InputDecoration(
                             labelText: 'Password',
                             prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+                            filled: true,
+                            fillColor: AppColors.lightPill,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
@@ -312,13 +337,23 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Full-Width Primary "LOG IN" Button
                           SizedBox(
                             width: double.infinity,
+                            height: 52,
                             child: ElevatedButton(
                               onPressed: _handleEmailSignIn,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.darkPill,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                                ),
+                              ),
                               child: const Text(
                                 'LOG IN',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.8,
+                                  fontSize: 15,
                                 ),
                               ),
                             ),
@@ -328,7 +363,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Divider reading "or continue with"
                           const Row(
                             children: [
-                              Expanded(child: Divider(color: AppColors.border)),
+                              Expanded(child: Divider(color: Color(0xFFE5E7EB))),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: AppSpacing.md),
                                 child: Text(
@@ -340,7 +375,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ),
-                              Expanded(child: Divider(color: AppColors.border)),
+                              Expanded(child: Divider(color: Color(0xFFE5E7EB))),
                             ],
                           ),
                           const SizedBox(height: AppSpacing.md),
@@ -348,12 +383,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           // Full-width white outline button with Google "G" icon and "Continue with Google"
                           SizedBox(
                             width: double.infinity,
+                            height: 52,
                             child: OutlinedButton(
                               onPressed: _handleGoogleSignIn,
                               style: OutlinedButton.styleFrom(
                                 backgroundColor: Colors.white,
-                                side: const BorderSide(color: AppColors.border, width: 1.2),
+                                side: const BorderSide(color: Color(0xFFE5E7EB), width: 1.2),
                                 foregroundColor: AppColors.textPrimary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                                ),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -397,21 +436,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: AppSpacing.md),
 
                   // VISUAL PLACEHOLDER: Fast touchless lobby check-in card
-                  // Note: A real QR/kiosk check-in system is out of scope for this build;
-                  // don't wire up any backend logic behind it, this is a visual placeholder.
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 14),
                     decoration: BoxDecoration(
-                      color: const Color(0x80FCEFEA),
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: const Color(0x40D95D39), width: 1),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: AppShadows.aestheticCard,
+                      border: Border.all(color: const Color(0xFFF1F5F9), width: 1),
                     ),
                     child: Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: const BoxDecoration(
-                            color: Colors.white,
+                            color: Color(0xFFFFF7ED),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -457,11 +495,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           },
                           style: ElevatedButton.styleFrom(
                             minimumSize: Size.zero,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                             backgroundColor: AppColors.primary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.small),
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
                             ),
                           ),
                           child: const Text(
