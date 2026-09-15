@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Represents a clinical consultation or medical treatment record in the VetCare network.
+///
+/// Treatments follow the patient across clinic branches and provide cross-clinic
+/// medical history for veterinarians.
 class TreatmentModel {
   final String id;
   final String petId;
@@ -31,6 +35,17 @@ class TreatmentModel {
   bool get isResolved => status == 'resolved';
   bool get hasFollowUp => followUpDate != null;
 
+  /// Helper parser to handle various timestamp formats safely (Timestamp, DateTime, int, or String).
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  /// Construct a [TreatmentModel] from a raw map and document ID.
   factory TreatmentModel.fromMap(Map<String, dynamic> map, String id) {
     return TreatmentModel(
       id: id,
@@ -38,19 +53,21 @@ class TreatmentModel {
       diagnosis: map['diagnosis'] as String? ?? '',
       medication: map['medication'] as String? ?? '',
       notes: map['notes'] as String? ?? '',
-      treatmentDate: (map['treatmentDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      followUpDate: (map['followUpDate'] as Timestamp?)?.toDate(),
+      treatmentDate: _parseDateTime(map['treatmentDate']),
+      followUpDate: map['followUpDate'] != null ? _parseDateTime(map['followUpDate']) : null,
       status: map['status'] as String? ?? 'active',
       vetId: map['vetId'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: _parseDateTime(map['createdAt']),
     );
   }
 
+  /// Construct a [TreatmentModel] directly from a Firestore [DocumentSnapshot].
   factory TreatmentModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     return TreatmentModel.fromMap(doc.data() ?? {}, doc.id);
   }
 
+  /// Convert to Firestore map representation matching schema specification.
   Map<String, dynamic> toMap() {
     return {
       'petId': petId,
@@ -66,6 +83,7 @@ class TreatmentModel {
     };
   }
 
+  /// Create a copy with optional overridden fields.
   TreatmentModel copyWith({
     String? id,
     String? petId,

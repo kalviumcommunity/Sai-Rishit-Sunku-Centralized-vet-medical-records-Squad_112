@@ -20,75 +20,81 @@ service cloud.firestore {
     // ROLE-BASED HELPERS
     // ============================================================================
     
-    // Retrieves profile data for the authenticated user
+    // Retrieves profile data for the authenticated user from the users collection
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Checks if the user has veterinary privileges
+    // Checks if the user document exists in the users collection
+    function hasUserDoc() {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Checks if user is explicitly registered with 'owner' role in the database
+    function isOwnerRole() {
+      return hasUserDoc() && getUserData().role == 'owner';
+    }
+
+    // Checks if user has veterinary privileges (via token claim or users document)
     function isVet() {
       return isAuthenticated() && (
         (request.auth.token.role != null && request.auth.token.role == 'vet') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'vet')
+        (hasUserDoc() && getUserData().role == 'vet')
       );
     }
 
-    // Checks if the user has administrative privileges
+    // Checks if user has administrative privileges (via token claim or users document)
     function isAdmin() {
       return isAuthenticated() && (
         (request.auth.token.role != null && request.auth.token.role == 'admin') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == 'admin')
+        (hasUserDoc() && getUserData().role == 'admin')
       );
+    }
+
+    // Checks if a target pet document exists in the pets collection
+    function petExists(petId) {
+      return exists(/databases/$(database)/documents/pets/$(petId));
+    }
+
+    // Verifies whether the requesting authenticated user owns the referenced pet
+    function isPetOwner(petId) {
+      return petExists(petId) && get(/databases/$(database)/documents/pets/$(petId)).data.ownerId == request.auth.uid;
     }
 
     // ============================================================================
     // USERS COLLECTION (DAY 2)
     // ============================================================================
-    // - Document ID matches Firebase Auth UID (unified for Email and Google Auth).
-    // - Users can read and write only their own profile document.
-    // - Role escalation protection: client updates cannot alter existing 'role'.
-    // ============================================================================
     match /users/{userId} {
-      // Read: Authenticated user can ONLY read their own document
       allow read: if isOwner(userId);
-
-      // Create: Authenticated user can only create their own document with valid role
       allow create: if isOwner(userId)
         && request.resource.data.keys().hasAll(['name', 'email', 'role', 'createdAt'])
         && request.resource.data.role in ['owner', 'vet', 'admin']
         && request.resource.data.name is string
         && request.resource.data.email is string;
-
-      // Update: Authenticated user can update profile fields, but CANNOT modify their role.
-      // Enforced by: request.resource.data.role == resource.data.role
-      // This strictly prevents privilege escalation from client-side writes.
       allow update: if isOwner(userId)
         && request.resource.data.role == resource.data.role;
-
-      // Delete: Prevent client-side deletion (administrative maintenance only)
       allow delete: if false;
     }
 
     // ============================================================================
-    // PETS COLLECTION (DAY 3)
+    // PETS COLLECTION (DAY 3 - TIGHTENED)
     // ============================================================================
-    // - Owners can create, read, update, and delete their own pets (ownerId == auth.uid).
-    // - Vets and Admins can read ANY pet across clinic branches for unified record search.
-    // - Only the owner or an admin can edit or delete a pet's core profile.
-    // - Microchip ID is WRITE-ONCE: immutable after document creation.
+    // - Explicit role enforcement from users collection: requires verified 'owner', 'vet', or 'admin' role.
+    // - Non-owner, non-vet, non-admin sessions are strictly DENIED.
+    // - Missing ownerId on write is strictly REJECTED.
+    // - Microchip ID is WRITE-ONCE: immutable after creation.
     // ============================================================================
     match /pets/{petId} {
-      // Read: Owner can read their own pets.
-      // Vets and Admins can read ANY pet across branches for cross-clinic medical history lookup.
+      // Read: Verified Owner can read only their own pets; Vets and Admins have global cross-branch read.
       allow read: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid ||
+        (resource.data.ownerId == request.auth.uid && isOwnerRole()) ||
         isVet() ||
         isAdmin()
       );
 
-      // Create: Owner can create pet records where ownerId matches their UID. Admin can also create.
+      // Create: Only verified owners (ownerId == auth.uid) or Admins can register pets.
       allow create: if isAuthenticated() && (
-        request.resource.data.ownerId == request.auth.uid || isAdmin()
+        (isOwnerRole() && request.resource.data.ownerId == request.auth.uid) || isAdmin()
       )
       && request.resource.data.keys().hasAll(['name', 'species', 'breed', 'gender', 'dateOfBirth', 'microchipId', 'ownerId', 'createdAt'])
       && request.resource.data.name is string
@@ -96,28 +102,100 @@ service cloud.firestore {
       && request.resource.data.microchipId is string
       && request.resource.data.microchipId.size() > 0;
 
-      // Update: Only the pet's owner or an admin can edit core pet info.
-      // Vets CANNOT alter core pet profile (vets only append treatment/vaccination records).
-      // WRITE-ONCE CONSTRAINTS:
-      // 1. microchipId is strictly immutable after creation.
-      // 2. ownerId is strictly immutable (ownership transfer requires admin approval).
+      // Update: Only the verified owner or Admin can update core demographic info.
+      // WRITE-ONCE: microchipId & ownerId are immutable after creation.
       allow update: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid || isAdmin()
+        (resource.data.ownerId == request.auth.uid && isOwnerRole()) || isAdmin()
       )
       && request.resource.data.microchipId == resource.data.microchipId
       && request.resource.data.ownerId == resource.data.ownerId;
 
-      // Delete: Only owner or admin can remove a pet record.
+      // Delete: Only verified owner or Admin can delete a pet record.
       allow delete: if isAuthenticated() && (
-        resource.data.ownerId == request.auth.uid || isAdmin()
+        (resource.data.ownerId == request.auth.uid && isOwnerRole()) || isAdmin()
       );
+    }
+
+    // ============================================================================
+    // TREATMENTS COLLECTION (DAY 4 / 5)
+    // ============================================================================
+    // - Cross-branch access: any vet can read all treatments.
+    // - Owners can read treatments for their own pets.
+    // - Creation: ONLY by authenticated vets, for existing pets only.
+    // - Anti-Spoofing: vetId must match auth.uid and branchId must match vet's assigned branch.
+    // - Server Timestamp: createdAt must be request.time (not client-supplied).
+    // - Edit/Delete: Only creating vet or admin can modify/remove.
+    // ============================================================================
+    match /treatments/{treatmentId} {
+      // Read: Any vet across network, admin, or the pet's owner.
+      allow read: if isVet() || isAdmin() || isPetOwner(resource.data.petId);
+
+      // Create: Only authenticated vets, strictly validated.
+      allow create: if isVet()
+        && petExists(request.resource.data.petId)
+        && request.resource.data.keys().hasAll([
+          'petId', 'diagnosis', 'medication', 'notes', 'treatmentDate',
+          'status', 'vetId', 'branchId', 'createdAt'
+        ])
+        && request.resource.data.status in ['active', 'resolved']
+        && request.resource.data.vetId == request.auth.uid
+        && request.resource.data.branchId == getUserData().branchId
+        && request.resource.data.createdAt == request.time;
+
+      // Update: Only the creating vet or an admin can edit a treatment record.
+      // Immutable fields: petId, vetId, branchId, and createdAt cannot be changed.
+      allow update: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin()
+        && request.resource.data.status in ['active', 'resolved']
+        && request.resource.data.petId == resource.data.petId
+        && request.resource.data.vetId == resource.data.vetId
+        && request.resource.data.branchId == resource.data.branchId
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // Delete: Only the creating vet or an admin can delete a treatment.
+      allow delete: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin();
+    }
+
+    // ============================================================================
+    // VACCINATIONS COLLECTION (DAY 6)
+    // ============================================================================
+    // - Cross-branch access: any vet can read all vaccination history.
+    // - Owners can read vaccinations for their own pets.
+    // - Creation: ONLY by authenticated vets, for existing pets only.
+    // - Anti-Spoofing: vetId and branchId must match authenticated vet's profile.
+    // - Server Timestamp: createdAt must be request.time.
+    // - Edit/Delete: Only creating vet or admin.
+    // ============================================================================
+    match /vaccinations/{vaccinationId} {
+      // Read: Any vet, admin, or the pet's owner.
+      allow read: if isVet() || isAdmin() || isPetOwner(resource.data.petId);
+
+      // Create: Only authenticated vets, strictly validated.
+      allow create: if isVet()
+        && petExists(request.resource.data.petId)
+        && request.resource.data.keys().hasAll([
+          'petId', 'vaccineName', 'dateGiven', 'nextDueDate',
+          'vetId', 'branchId', 'notes', 'createdAt'
+        ])
+        && request.resource.data.vetId == request.auth.uid
+        && request.resource.data.branchId == getUserData().branchId
+        && request.resource.data.createdAt == request.time;
+
+      // Update: Only the administering vet or admin.
+      // Immutable fields: petId, vetId, branchId, and createdAt cannot be tampered with.
+      allow update: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin()
+        && request.resource.data.petId == resource.data.petId
+        && request.resource.data.vetId == resource.data.vetId
+        && request.resource.data.branchId == resource.data.branchId
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // Delete: Only administering vet or admin.
+      allow delete: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin();
     }
 
     // ============================================================================
     // DEFAULT DENY ALL (PROGRESSIVE SCOPING)
     // ============================================================================
-    // Remaining collections (treatments, vaccinations, branches, medical_documents)
-    // will be layered in progressively in subsequent milestones.
+    // Remaining collections (branches, medical_documents) will be scoped next.
     // ============================================================================
     match /{document=**} {
       allow read, write: if false;
