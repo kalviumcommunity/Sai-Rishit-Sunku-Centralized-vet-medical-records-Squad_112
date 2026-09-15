@@ -68,7 +68,7 @@ class PetProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Golden Retriever • 3 Years Old',
+                    'Dachshund • 3 Years Old',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,

@@ -36,7 +36,7 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
   final List<Map<String, dynamic>> _pets = [
     {
       'name': 'Milo',
-      'breed': 'Golden Retriever',
+      'breed': 'Dachshund',
       'age': '3 Years Old',
       'tag': '#VT-1092',
       'note': 'Vaccines Up to Date • Central Vet Clinic Branch',

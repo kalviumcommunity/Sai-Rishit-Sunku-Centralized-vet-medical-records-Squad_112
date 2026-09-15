@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Whimsical Vector Pet Mascots matching the user reference design:
-/// - MascotDogWidget: Playful running pup with floppy ears and happy smile
+/// Whimsical Vector & Asset Pet Mascots matching the user reference design:
+/// - MascotDogWidget: Playful Dachshund pup with floppy ears and happy smile
 /// - MascotCatWidget: Cute orange cat with white chest and fluffy tail
 /// - MascotBirdWidget: Round yellow canary on a wooden perch
 class MascotDogWidget extends StatelessWidget {
@@ -10,9 +10,17 @@ class MascotDogWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size * 0.75),
-      painter: _DogPainter(bounce: 0.5),
+    return Image.asset(
+      'assets/images/dog_mascot.jpg',
+      width: size,
+      height: size * 0.75,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return CustomPaint(
+          size: Size(size, size * 0.75),
+          painter: _DogPainter(bounce: 0.5),
+        );
+      },
     );
   }
 }
@@ -26,112 +34,111 @@ class _DogPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Body Paint
+    // Body Paint: Rich Dachshund Chestnut Brown
     final bodyPaint = Paint()
       ..shader = const LinearGradient(
-        colors: [Color(0xFFE07A3B), Color(0xFFC45A22)],
+        colors: [Color(0xFFB45309), Color(0xFF92400E)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, w, h));
 
-    final darkPaint = Paint()..color = const Color(0xFF8B3A14);
-    final earPaint = Paint()..color = const Color(0xFFF39C72);
+    final earPaint = Paint()..color = const Color(0xFFF97316).withValues(alpha: 0.85);
+    final earOuterPaint = Paint()..color = const Color(0xFF78350F);
     final eyePaint = Paint()..color = const Color(0xFF1E293B);
     final shinePaint = Paint()..color = Colors.white;
     final nosePaint = Paint()..color = const Color(0xFF0F172A);
     final tonguePaint = Paint()..color = const Color(0xFFF87171);
 
-    // 1. Curled Tail
+    // 1. Upward Curved Tail
     final tailPath = Path()
-      ..moveTo(w * 0.82, h * 0.46)
-      ..cubicTo(w * 0.90, h * 0.40, w * 0.92, h * 0.32, w * 0.88, h * 0.30)
-      ..cubicTo(w * 0.85, h * 0.30, w * 0.80, h * 0.42, w * 0.78, h * 0.48);
+      ..moveTo(w * 0.78, h * 0.46)
+      ..cubicTo(w * 0.88, h * 0.40, w * 0.90, h * 0.28, w * 0.84, h * 0.26)
+      ..cubicTo(w * 0.80, h * 0.26, w * 0.76, h * 0.40, w * 0.74, h * 0.48);
     canvas.drawPath(
       tailPath,
       Paint()
-        ..color = const Color(0xFFB34A1B)
+        ..color = const Color(0xFF92400E)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 14
+        ..strokeWidth = 10
         ..strokeCap = StrokeCap.round,
     );
 
-    // 2. Rear Leg (Extended Backwards Running)
+    // 2. Hind Legs (Stretched backwards leap)
     final backLeg = Path()
-      ..moveTo(w * 0.75, h * 0.55)
-      ..quadraticBezierTo(w * 0.92, h * 0.58, w * 0.96, h * 0.54)
-      ..quadraticBezierTo(w * 0.88, h * 0.65, w * 0.72, h * 0.64)
+      ..moveTo(w * 0.72, h * 0.52)
+      ..quadraticBezierTo(w * 0.90, h * 0.54, w * 0.95, h * 0.50)
+      ..quadraticBezierTo(w * 0.86, h * 0.62, w * 0.70, h * 0.60)
       ..close();
-    canvas.drawPath(backLeg, Paint()..color = const Color(0xFFB34A1B));
+    canvas.drawPath(backLeg, Paint()..color = const Color(0xFF78350F));
 
-    // 3. Front Leg (Extended Forward Running)
-    final frontLeg = Path()
-      ..moveTo(w * 0.38, h * 0.65)
-      ..quadraticBezierTo(w * 0.45, h * 0.80, w * 0.35, h * 0.82)
-      ..quadraticBezierTo(w * 0.30, h * 0.70, w * 0.32, h * 0.64)
+    // 3. Front Paws (Tucked forward under chest)
+    final frontPaws = Path()
+      ..moveTo(w * 0.30, h * 0.60)
+      ..quadraticBezierTo(w * 0.24, h * 0.72, w * 0.32, h * 0.74)
+      ..quadraticBezierTo(w * 0.38, h * 0.68, w * 0.36, h * 0.60)
       ..close();
-    canvas.drawPath(frontLeg, Paint()..color = const Color(0xFFB34A1B));
+    canvas.drawPath(frontPaws, Paint()..color = const Color(0xFF92400E));
 
-    // 4. Elongated Sausage Body (Snoopy / Milo)
-    final bodyRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.28, h * 0.38, w * 0.54, h * 0.42),
-      const Radius.circular(36),
-    );
-    canvas.save();
-    canvas.rotate(-0.06);
-    canvas.drawRRect(bodyRect, bodyPaint);
-    canvas.restore();
+    // 4. Curved Sausage Body (Leaping Dachshund banana curve)
+    final bodyPath = Path()
+      ..moveTo(w * 0.28, h * 0.44)
+      ..cubicTo(w * 0.38, h * 0.36, w * 0.65, h * 0.40, w * 0.78, h * 0.48)
+      ..cubicTo(w * 0.72, h * 0.68, w * 0.45, h * 0.74, w * 0.28, h * 0.58)
+      ..close();
+    canvas.drawPath(bodyPath, bodyPaint);
 
-    // Belly lighter soft curve
-    final bellyPaint = Paint()
-      ..color = const Color(0xFFF39C72).withValues(alpha: 0.5);
-    canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.55, h * 0.62), width: w * 0.42, height: h * 0.26),
-      bellyPaint,
-    );
+    // Lighter warm belly
+    final bellyPath = Path()
+      ..moveTo(w * 0.32, h * 0.58)
+      ..cubicTo(w * 0.48, h * 0.70, w * 0.65, h * 0.66, w * 0.72, h * 0.55)
+      ..cubicTo(w * 0.62, h * 0.60, w * 0.45, h * 0.62, w * 0.32, h * 0.58)
+      ..close();
+    canvas.drawPath(bellyPath, Paint()..color = const Color(0xFFFDBA74));
 
-    // 5. Head
-    final headCenter = Offset(w * 0.26, h * 0.36);
-    canvas.drawCircle(headCenter, w * 0.16, bodyPaint);
+    // 5. Head & Muzzle (Facing left, angled up)
+    final headCenter = Offset(w * 0.26, h * 0.34);
+    canvas.drawCircle(headCenter, w * 0.14, bodyPaint);
 
-    // 6. Snout / Muzzle
+    // Elongated Dachshund snout pointing up-left
     final snoutPath = Path()
-      ..moveTo(headCenter.dx - w * 0.08, headCenter.dy + h * 0.02)
-      ..quadraticBezierTo(headCenter.dx - w * 0.24, headCenter.dy - h * 0.04, headCenter.dx - w * 0.26, headCenter.dy - h * 0.08)
-      ..quadraticBezierTo(headCenter.dx - w * 0.18, headCenter.dy - h * 0.14, headCenter.dx - w * 0.04, headCenter.dy - h * 0.06)
+      ..moveTo(headCenter.dx, headCenter.dy - h * 0.08)
+      ..lineTo(headCenter.dx - w * 0.18, headCenter.dy - h * 0.08)
+      ..quadraticBezierTo(headCenter.dx - w * 0.24, headCenter.dy - h * 0.02, headCenter.dx - w * 0.16, headCenter.dy + h * 0.06)
+      ..lineTo(headCenter.dx, headCenter.dy + h * 0.08)
       ..close();
     canvas.drawPath(snoutPath, bodyPaint);
 
-    // 7. Black Nose
+    // 6. Upward Glossy Black Nose
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(headCenter.dx - w * 0.24, headCenter.dy - h * 0.08), width: 14, height: 16),
+      Rect.fromCenter(center: Offset(headCenter.dx - w * 0.19, headCenter.dy - h * 0.07), width: 15, height: 13),
       nosePaint,
     );
-    canvas.drawCircle(Offset(headCenter.dx - w * 0.25, headCenter.dy - h * 0.10), 3, shinePaint);
+    canvas.drawCircle(Offset(headCenter.dx - w * 0.20, headCenter.dy - h * 0.09), 3, shinePaint);
 
-    // 8. Pink Tongue sticking out
+    // 7. Open Smiling Mouth & Pink Tongue
     final tonguePath = Path()
-      ..moveTo(headCenter.dx - w * 0.16, headCenter.dy + h * 0.04)
-      ..quadraticBezierTo(headCenter.dx - w * 0.22, headCenter.dy + h * 0.10, headCenter.dx - w * 0.14, headCenter.dy + h * 0.11)
-      ..quadraticBezierTo(headCenter.dx - w * 0.10, headCenter.dy + h * 0.06, headCenter.dx - w * 0.11, headCenter.dy + h * 0.02)
+      ..moveTo(headCenter.dx - w * 0.13, headCenter.dy + h * 0.02)
+      ..quadraticBezierTo(headCenter.dx - w * 0.16, headCenter.dy + h * 0.08, headCenter.dx - w * 0.09, headCenter.dy + h * 0.08)
+      ..quadraticBezierTo(headCenter.dx - w * 0.06, headCenter.dy + h * 0.04, headCenter.dx - w * 0.08, headCenter.dy + h * 0.01)
       ..close();
     canvas.drawPath(tonguePath, tonguePaint);
 
-    // 9. Floppy Flying Ear
+    // 8. Large Rounded Peach Dachshund Drooping Ear
     final earPath = Path()
-      ..moveTo(headCenter.dx + w * 0.04, headCenter.dy - h * 0.06)
-      ..cubicTo(headCenter.dx + w * 0.18, headCenter.dy - h * 0.22, headCenter.dx + w * 0.28, headCenter.dy - h * 0.06, headCenter.dx + w * 0.14, headCenter.dy + h * 0.06)
+      ..moveTo(headCenter.dx + w * 0.02, headCenter.dy - h * 0.08)
+      ..cubicTo(headCenter.dx + w * 0.16, headCenter.dy - h * 0.14, headCenter.dx + w * 0.24, headCenter.dy + h * 0.04, headCenter.dx + w * 0.12, headCenter.dy + h * 0.10)
+      ..cubicTo(headCenter.dx + w * 0.04, headCenter.dy + h * 0.12, headCenter.dx - w * 0.02, headCenter.dy + h * 0.02, headCenter.dx + w * 0.02, headCenter.dy - h * 0.08)
       ..close();
-    canvas.drawPath(earPath, darkPaint);
-    // Inner ear pinkish
+    canvas.drawPath(earPath, earOuterPaint);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(headCenter.dx + w * 0.16, headCenter.dy - h * 0.06), width: w * 0.14, height: h * 0.14),
+      Rect.fromCenter(center: Offset(headCenter.dx + w * 0.10, headCenter.dy), width: w * 0.16, height: h * 0.14),
       earPaint,
     );
 
-    // 10. Eye with twinkle
-    final eyePos = Offset(headCenter.dx - w * 0.06, headCenter.dy - h * 0.05);
+    // 9. Large Glossy Eye
+    final eyePos = Offset(headCenter.dx - w * 0.05, headCenter.dy - h * 0.05);
     canvas.drawCircle(eyePos, 7.5, eyePaint);
-    canvas.drawCircle(Offset(eyePos.dx - 2, eyePos.dy - 2), 2.5, shinePaint);
+    canvas.drawCircle(Offset(eyePos.dx - 2.5, eyePos.dy - 2.5), 2.5, shinePaint);
   }
 
   @override
@@ -145,9 +152,17 @@ class MascotCatWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size * 0.95),
-      painter: _CatPainter(tailWave: 0.05),
+    return Image.asset(
+      'assets/images/cat_mascot.jpg',
+      width: size,
+      height: size * 0.95,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return CustomPaint(
+          size: Size(size, size * 0.95),
+          painter: _CatPainter(tailWave: 0.05),
+        );
+      },
     );
   }
 }
@@ -268,9 +283,17 @@ class MascotBirdWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size(size, size * 1.1),
-      painter: _BirdPainter(swing: 0.02),
+    return Image.asset(
+      'assets/images/bird_mascot.jpg',
+      width: size,
+      height: size * 1.1,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return CustomPaint(
+          size: Size(size, size * 1.1),
+          painter: _BirdPainter(swing: 0.02),
+        );
+      },
     );
   }
 }
