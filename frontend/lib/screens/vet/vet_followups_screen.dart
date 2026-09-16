@@ -32,7 +32,7 @@ class VetFollowupsScreen extends StatelessWidget {
                       children: [
                         Text('Post-Surgery Suture Removal', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 2),
-                        const Text('Pet: Bella (Beagle) • Owner: Sarah Jenkins'),
+                        const Text('Pet: Bella (Beagle) \u2022 Owner: Sarah Jenkins'),
                         const SizedBox(height: 4),
                         const Text(
                           'Scheduled: Tomorrow, 10:30 AM',
@@ -63,7 +63,7 @@ class VetFollowupsScreen extends StatelessWidget {
                       children: [
                         Text('Dental Follow-up Check', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 2),
-                        const Text('Pet: Oliver (Persian Cat) • Owner: David Miller'),
+                        const Text('Pet: Oliver (Persian Cat) \u2022 Owner: David Miller'),
                         const SizedBox(height: 4),
                         const Text(
                           'Scheduled: Friday, 02:00 PM',

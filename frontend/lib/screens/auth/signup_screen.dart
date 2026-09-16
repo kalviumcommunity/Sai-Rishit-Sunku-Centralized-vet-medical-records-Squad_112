@@ -440,24 +440,41 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Full-Width "SIGN UP" Button
                           SizedBox(
                             width: double.infinity,
-                            height: 52,
+                            height: 54,
                             child: ElevatedButton(
                               onPressed: _handleRegister,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.darkPill,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
+                                padding: const EdgeInsets.only(left: 24, right: 8),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(AppRadius.pill),
                                 ),
                               ),
-                              child: const Text(
-                                'SIGN UP',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.8,
-                                  fontSize: 15,
-                                ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'SIGN UP',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.2,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: Icon(Icons.arrow_forward, size: 17, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),

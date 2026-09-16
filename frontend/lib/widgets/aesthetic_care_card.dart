@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 import 'pet_mascots.dart';
 
-/// Hero Pet Card matching the reference mockup:
-/// - 32px rounded white card with soft ambient drop-shadow
-/// - Whimsical animated vector mascot (Dog, Cat, Bird)
-/// - 4-item Activity Category Bar (Food, Play, Care, Health)
-/// - Contextual owner note with circular avatar
-/// - Date/time scheduling pill + black action button
-/// - Bottom pet switcher carousel with count badges & "+" add pet button
+/// Hero Pet Card upgraded with Taste Skill (High-End Visual Design):
+/// - Double-Bezel (Doppelrand) nested container architecture
+/// - Fluid animated activity capsule switcher
+/// - Button-in-button trailing circular icon pattern
+/// - Verified care note with avatar
+/// - High-contrast scheduling pill + tactile primary action
+/// - Clean bottom pet switcher carousel with count badges & "+" add pet button
 class AestheticCareCard extends StatefulWidget {
   final VoidCallback? onAddPet;
   final VoidCallback? onOpenRecords;
@@ -36,10 +36,10 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
   final List<Map<String, dynamic>> _pets = [
     {
       'name': 'Milo',
-      'breed': 'Golden Retriever',
+      'breed': 'Dachshund',
       'age': '3 Years Old',
       'tag': '#VT-1092',
-      'note': 'Vaccines Up to Date • Central Vet Clinic Branch',
+      'note': 'Vaccines Up to Date \u2022 Central Vet Clinic Branch',
       'time': 'Sept 20, 10:30 AM',
       'action': 'Health Chart',
       'avatarColor': const Color(0xFFFED7AA),
@@ -52,7 +52,7 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
       'tag': '#VT-2041',
       'note': "Lucky's diet chart is recorded on the cloud profile.",
       'time': 'Today, 12:00 PM',
-      'action': 'Feed',
+      'action': 'Nutrition',
       'avatarColor': const Color(0xFFFDE68A),
       'species': 'cat',
     },
@@ -72,7 +72,7 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
   final List<Map<String, dynamic>> _activities = [
     {'id': 'food', 'label': 'Food', 'icon': Icons.lunch_dining_outlined},
     {'id': 'play', 'label': 'Play', 'icon': Icons.sports_baseball_outlined},
-    {'id': 'care', 'label': 'Care', 'icon': Icons.soup_kitchen_outlined},
+    {'id': 'care', 'label': 'Care', 'icon': Icons.spa_outlined},
     {'id': 'health', 'label': 'Health', 'icon': Icons.medical_services_outlined},
   ];
 
@@ -80,294 +80,363 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
   Widget build(BuildContext context) {
     final pet = _pets[_selectedPetIndex];
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.heroCardRadius,
-        border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
-        boxShadow: AppShadows.aestheticCard,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-        child: Column(
-          children: [
-            // 1. Pet Name Header
-            Text(
-              pet['name'] as String,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${pet['breed']} • ${pet['age']}',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
+      // DOUBLE-BEZEL OUTER SHELL
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surfaceVariant.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(34),
+          border: Border.all(color: AppColors.border, width: 1.2),
+          boxShadow: AppShadows.aestheticCard,
+        ),
+        padding: const EdgeInsets.all(5),
+        // INNER CORE
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(29),
+            border: Border.all(color: Colors.white, width: 1.5),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+          child: Column(
+            children: [
+              // 1. Pet Name Header & Eyebrow
+              Text(
+                pet['name'] as String,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.7,
+                  height: 1.1,
                 ),
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.lightPill,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    pet['tag'] as String,
+              ),
+              const SizedBox(height: 5),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '${pet['breed']} \u2022 ${pet['age']}',
                     style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // 2. Animated Whimsical Pet Mascot
-            SizedBox(
-              height: 170,
-              child: Center(
-                child: _buildMascot(pet['species'] as String),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // 3. Segmented Activity Category Bar (Food, Play, Care, Health)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(_activities.length, (index) {
-                final act = _activities[index];
-                final isSelected = _selectedActivityIndex == index;
-
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedActivityIndex = index);
-                    if (index == 3) {
-                      widget.onOpenRecords?.call();
-                    }
-                  },
-                  child: Column(
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 58,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          color: isSelected ? AppColors.darkPill : AppColors.lightPill,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.darkPill.withValues(alpha: 0.25),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Icon(
-                          act['icon'] as IconData,
-                          size: 24,
-                          color: isSelected ? Colors.white : AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        act['label'] as String,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 20),
-
-            // 4. Contextual Care Note Row
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.lightPill.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 16,
-                    backgroundColor: AppColors.primaryLight,
-                    child: Icon(Icons.person, size: 18, color: AppColors.primary),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightPill,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.border.withValues(alpha: 0.6), width: 1),
+                    ),
                     child: Text(
-                      pet['note'] as String,
+                      pet['tag'] as String,
                       style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textSecondary,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 18),
 
-            // 5. Schedule Time Pill + Black Action Button
-            Row(
-              children: [
-                // Date & Time Pill
-                Expanded(
-                  child: Container(
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.lightPill,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.schedule, size: 17, color: AppColors.textSecondary),
-                        const SizedBox(width: 8),
-                        Text(
-                          pet['time'] as String,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
+              // 2. Animated Mascot
+              SizedBox(
+                height: 175,
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: KeyedSubtree(
+                      key: ValueKey(pet['species']),
+                      child: _buildMascot(pet['species'] as String),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+              ),
+              const SizedBox(height: 18),
 
-                // Primary Action Button (e.g. Health Chart / Check-in)
-                ElevatedButton(
-                  onPressed: () {
-                    widget.onOpenRecords?.call();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.darkPill,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    minimumSize: const Size(100, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                  ),
-                  child: Text(
-                    pet['action'] as String,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
+              // 3. Activity Capsule Switcher
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.lightPill.withValues(alpha: 0.8),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
+                child: Row(
+                  children: List.generate(_activities.length, (index) {
+                    final act = _activities[index];
+                    final isSelected = _selectedActivityIndex == index;
 
-            // 6. Bottom Pet Switcher Bar & Add Pet Button
-            Row(
-              children: [
-                Row(
-                  children: List.generate(_pets.length, (index) {
-                    final item = _pets[index];
-                    final isCurrent = _selectedPetIndex == index;
-
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedPetIndex = index),
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 10),
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: item['avatarColor'] as Color,
-                                border: Border.all(
-                                  color: isCurrent ? AppColors.darkPill : Colors.transparent,
-                                  width: 2.2,
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  item['species'] == 'dog'
-                                      ? Icons.pets
-                                      : item['species'] == 'cat'
-                                          ? Icons.pets
-                                          : Icons.cruelty_free,
-                                  size: 20,
-                                  color: AppColors.darkPill,
-                                ),
-                              ),
-                            ),
-                            if (index == 0)
-                              Positioned(
-                                top: -2,
-                                right: -2,
-                                child: Container(
-                                  padding: const EdgeInsets.all(3),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.darkPill,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Text(
-                                    '2',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.bold,
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() => _selectedActivityIndex = index);
+                          if (index == 3) {
+                            widget.onOpenVaccines?.call();
+                          }
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.surface : Colors.transparent,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.06),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
                                     ),
-                                  ),
+                                  ]
+                                : null,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                act['icon'] as IconData,
+                                size: 20,
+                                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                act['label'] as String,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                                  letterSpacing: -0.2,
                                 ),
                               ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     );
                   }),
                 ),
+              ),
+              const SizedBox(height: 18),
 
-                // "+" Add Pet Button
-                GestureDetector(
-                  onTap: widget.onAddPet,
-                  child: Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.aestheticBorder, width: 1.5),
-                    ),
-                    child: const Icon(Icons.add, size: 20, color: AppColors.textPrimary),
-                  ),
+              // 4. Care Note Micro-Card
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.lightPill.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border.withValues(alpha: 0.5), width: 1),
                 ),
-              ],
-            ),
-          ],
+                child: Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryLight,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.verified_user_outlined, size: 18, color: AppColors.primary),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        pet['note'] as String,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.35,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 5. Schedule Time Pill + Button-in-Button Primary Action
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 52,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightPill,
+                        borderRadius: BorderRadius.circular(26),
+                        border: Border.all(color: AppColors.border.withValues(alpha: 0.6), width: 1),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.schedule, size: 18, color: AppColors.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            pet['time'] as String,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+
+                  // Button-in-Button Action
+                  GestureDetector(
+                    onTap: () {
+                      widget.onOpenRecords?.call();
+                    },
+                    child: Container(
+                      height: 52,
+                      padding: const EdgeInsets.only(left: 20, right: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.darkPill,
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.18),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            pet['action'] as String,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 0.1,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.16),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.arrow_forward, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // 6. Bottom Pet Switcher Bar & Add Pet Button
+              Row(
+                children: [
+                  Row(
+                    children: List.generate(_pets.length, (index) {
+                      final item = _pets[index];
+                      final isCurrent = _selectedPetIndex == index;
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedPetIndex = index),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.only(right: 12),
+                          padding: const EdgeInsets.all(2.5),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isCurrent ? AppColors.primary : Colors.transparent,
+                              width: 2.2,
+                            ),
+                          ),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: item['avatarColor'] as Color,
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    item['species'] == 'dog'
+                                        ? Icons.pets
+                                        : item['species'] == 'cat'
+                                            ? Icons.pets
+                                            : Icons.cruelty_free,
+                                    size: 20,
+                                    color: AppColors.darkPill,
+                                  ),
+                                ),
+                              ),
+                              if (index == 0)
+                                Positioned(
+                                  top: -2,
+                                  right: -2,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Text(
+                                      '2',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+
+                  // "+" Add Pet Button
+                  GestureDetector(
+                    onTap: widget.onAddPet,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.lightPill,
+                        border: Border.all(color: AppColors.border, width: 1.5),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.add, size: 20, color: AppColors.textPrimary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -376,12 +445,12 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
   Widget _buildMascot(String species) {
     switch (species) {
       case 'cat':
-        return const MascotCatWidget(size: 170);
+        return const MascotCatWidget(size: 175);
       case 'bird':
-        return const MascotBirdWidget(size: 170);
+        return const MascotBirdWidget(size: 175);
       case 'dog':
       default:
-        return const MascotDogWidget(size: 170);
+        return const MascotDogWidget(size: 175);
     }
   }
 }

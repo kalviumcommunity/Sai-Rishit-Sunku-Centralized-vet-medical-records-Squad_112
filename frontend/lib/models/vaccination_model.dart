@@ -12,6 +12,8 @@ class VaccinationModel {
   final DateTime nextDueDate;
   final String vetId;
   final String branchId;
+  final String? branchName;
+  final String? vetName;
   final String notes;
   final DateTime createdAt;
 
@@ -23,6 +25,8 @@ class VaccinationModel {
     required this.nextDueDate,
     required this.vetId,
     required this.branchId,
+    this.branchName,
+    this.vetName,
     required this.notes,
     required this.createdAt,
   });
@@ -80,6 +84,8 @@ class VaccinationModel {
       nextDueDate: _parseDateTime(map['nextDueDate']),
       vetId: map['vetId'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
+      branchName: map['branchName'] as String?,
+      vetName: map['vetName'] as String?,
       notes: map['notes'] as String? ?? '',
       createdAt: _parseDateTime(map['createdAt']),
     );
@@ -99,6 +105,8 @@ class VaccinationModel {
       'nextDueDate': Timestamp.fromDate(nextDueDate),
       'vetId': vetId,
       'branchId': branchId,
+      if (branchName != null) 'branchName': branchName,
+      if (vetName != null) 'vetName': vetName,
       'notes': notes,
       'createdAt': Timestamp.fromDate(createdAt),
     };
@@ -113,6 +121,8 @@ class VaccinationModel {
     DateTime? nextDueDate,
     String? vetId,
     String? branchId,
+    String? branchName,
+    String? vetName,
     String? notes,
     DateTime? createdAt,
   }) {
@@ -124,6 +134,8 @@ class VaccinationModel {
       nextDueDate: nextDueDate ?? this.nextDueDate,
       vetId: vetId ?? this.vetId,
       branchId: branchId ?? this.branchId,
+      branchName: branchName ?? this.branchName,
+      vetName: vetName ?? this.vetName,
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
     );
