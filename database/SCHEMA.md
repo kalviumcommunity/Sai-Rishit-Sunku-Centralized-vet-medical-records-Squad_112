@@ -131,7 +131,7 @@ Stores patient profiles. Medical history follows this entity regardless of which
 | `photoUrl` | `string` | `String?` | **Yes** | Cloud Storage download URL. Null falls back to default avatar icon |
 | `createdAt` | `timestamp` | `DateTime` | No | Timestamp of pet registration |
 
-#### Microchip ID Policy & Security Rules (Day 3)
+#### Microchip ID Policy & Security Rules (Day 3 / Stress-Tested)
 - **Write-Once Immutability (`microchipId`)**:
   - `microchipId` is **settable only during pet document creation** and is strictly **immutable thereafter** (`request.resource.data.microchipId == resource.data.microchipId`).
   - *Architectural Rationale*: A microchip is a permanent, ISO-standard RFID transponder physically implanted in the pet. It does not realistically change over an animal's lifetime. Freezing it prevents accidental overwrite, fraudulent ownership disputes, and cross-branch patient identity desynchronization.
@@ -141,6 +141,15 @@ Stores patient profiles. Medical history follows this entity regardless of which
 - **Core Info Modification Protection**:
   - `update` / `delete`: Only the pet's registered owner (`resource.data.ownerId == request.auth.uid`) or a network administrator (`isAdmin()`) can modify or delete core pet profile details.
   - Attending vets cannot alter core demographic fields (such as breed, species, birth date, or microchip ID); vets interact with patient records by appending new `treatments`, `vaccinations`, or `medical_documents`.
+
+#### Pets Role-Based Permissions Matrix
+| Action | Pet Owner (Own Pet) | Pet Owner (Other's Pet) | Veterinarian (`role: 'vet'`) | Network Admin (`role: 'admin'`) | Unregistered / No Role |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Read Profile** | ✅ Allowed | ❌ Denied | ✅ Allowed (Cross-branch) | ✅ Allowed | ❌ Denied |
+| **Create Pet** | ✅ Allowed (ownerId matches) | ❌ Denied | ❌ Denied | ✅ Allowed | ❌ Denied |
+| **Update Info** | ✅ Allowed (microchipId immutable) | ❌ Denied | ❌ Denied | ✅ Allowed (microchipId immutable) | ❌ Denied |
+| **Modify Microchip** | ❌ Denied (Write-Once) | ❌ Denied | ❌ Denied | ❌ Denied (Write-Once) | ❌ Denied |
+| **Delete Pet** | ✅ Allowed | ❌ Denied | ❌ Denied | ✅ Allowed | ❌ Denied |
 
 ---
 
@@ -155,10 +164,21 @@ Clinical consultation records, treatments, and scheduled follow-ups.
 | `notes` | `string` | `String` | No | Attending vet's clinical observations |
 | `treatmentDate` | `timestamp` | `DateTime` | No | Date and time consultation took place |
 | `followUpDate` | `timestamp` | `DateTime?` | **Yes** | Scheduled next check-in (powers "Vet Follow-ups" screen). Null if none |
-| `status` | `string` | `String` | No | **[Updated]** Enum: `'active'`, `'resolved'`. Controls status chips in UI |
+| `status` | `string` | `String` | No | Enum: `'active'`, `'resolved'`. Controls status badge in UI |
 | `vetId` | `string` | `String` | No | Attending veterinarian's user ID |
 | `branchId` | `string` | `String` | No | Branch where the consultation occurred |
-| `createdAt` | `timestamp` | `DateTime` | No | Record creation timestamp |
+| `createdAt` | `timestamp` | `DateTime` | No | Record creation timestamp (`FieldValue.serverTimestamp()`) |
+
+#### Treatment Status Rule ('active' vs 'resolved')
+- **Definition & Initial State**: Treatments are created with `status: 'active'` to indicate an ongoing diagnosis or course of treatment requiring monitoring.
+- **Resolution Criteria**:
+  1. **Manual Resolution**: An attending vet explicitly updates `status` to `'resolved'` upon completing treatment or during a follow-up discharge.
+  2. **Automated Follow-Up Expiration**: A treatment is deemed functionally resolved if its `followUpDate` has passed and no newer treatment for the same pet marks the condition as active.
+- **Security Constraints**:
+  - `create`: Can only be created by an authenticated vet (`isVet()`). Target `petId` must exist in Firestore (`petExists()`).
+  - `vetId` and `branchId` must strictly match the authenticated vet's own ID (`request.auth.uid`) and their clinic branch (`getUserData().branchId`), preventing spoofing.
+  - `createdAt` must equal `request.time` (server timestamp).
+  - `update` / `delete`: Allowed only by the creating vet (`vetId == auth.uid`) or an admin (`isAdmin()`). Core link keys (`petId`, `vetId`, `branchId`, `createdAt`) are immutable.
 
 ---
 
@@ -170,11 +190,25 @@ Immunization history and booster tracking.
 | `petId` | `string` | `String` | No | Document ID of the vaccinated pet |
 | `vaccineName` | `string` | `String` | No | Vaccine title (e.g., "Rabies 3-Year", "DHPP Booster") |
 | `dateGiven` | `timestamp` | `DateTime` | No | Date administered |
-| `nextDueDate` | `timestamp` | `DateTime` | No | Expiration / booster due date (powers "Vaccines Up to Date" logic) |
+| `nextDueDate` | `timestamp` | `DateTime` | No | Expiration / booster due date |
 | `vetId` | `string` | `String` | No | Attending veterinarian's user ID |
 | `branchId` | `string` | `String` | No | Clinic branch where administered |
 | `notes` | `string` | `String` | No | Batch / lot notes or adverse reaction remarks (can be empty string) |
-| `createdAt` | `timestamp` | `DateTime` | No | Record creation timestamp |
+| `createdAt` | `timestamp` | `DateTime` | No | Record creation timestamp (`FieldValue.serverTimestamp()`) |
+
+#### Vaccination Validity Determination (Client-Side Computation)
+- **Architectural Decision**: Validity statuses ("Up to date", "Due Soon", "Overdue", and "X Year Valid") are **computed dynamically client-side at render time** from `dateGiven` and `nextDueDate`, rather than stored as a static field in Firestore.
+  - *Reasoning*: A stored field (e.g. `status: "valid"`) silently rots and becomes stale the moment calendar time crosses `nextDueDate`. Computing client-side against `DateTime.now()` guarantees 100% freshness, zero stale states, and zero background maintenance cron jobs.
+- **Exact Computation Logic**:
+  - **Overdue**: `nextDueDate.isBefore(DateTime.now())` (or `daysUntilDue < 0`).
+  - **Due Soon**: `daysUntilDue >= 0 && daysUntilDue <= 30`.
+  - **Up to date**: `daysUntilDue > 30`.
+  - **Validity Duration**: `years = (nextDueDate.difference(dateGiven).inDays / 365).round()`. If `years >= 1` ➔ `"$years Year Valid"` (e.g. "3 Year Valid"); otherwise `"$months Month Valid"`.
+- **Security Constraints**:
+  - Creation restricted to authenticated vets (`isVet()`) for existing pets (`petExists()`).
+  - Strict anti-spoofing: `vetId == request.auth.uid` and `branchId == getUserData().branchId`.
+  - `createdAt == request.time`.
+  - Only creating vet or admin can update or delete.
 
 ---
 
