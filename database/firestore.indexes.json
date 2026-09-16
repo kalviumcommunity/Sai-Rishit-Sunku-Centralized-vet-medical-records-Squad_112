@@ -1,4 +1,53 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "pets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "nameLower", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "species", "order": "ASCENDING" },
+        { "fieldPath": "nameLower", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "treatments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "petId", "order": "ASCENDING" },
+        { "fieldPath": "treatmentDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "treatments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "branchId", "order": "ASCENDING" },
+        { "fieldPath": "followUpDate", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "vaccinations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "petId", "order": "ASCENDING" },
+        { "fieldPath": "dateGiven", "order": "DESCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
