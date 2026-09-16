@@ -11,6 +11,8 @@ class TreatmentModel {
   final String status; // 'active' | 'resolved'
   final String vetId;
   final String branchId;
+  final String? branchName;
+  final String? vetName;
   final DateTime createdAt;
 
   const TreatmentModel({
@@ -24,6 +26,8 @@ class TreatmentModel {
     required this.status,
     required this.vetId,
     required this.branchId,
+    this.branchName,
+    this.vetName,
     required this.createdAt,
   });
 
@@ -43,6 +47,8 @@ class TreatmentModel {
       status: map['status'] as String? ?? 'active',
       vetId: map['vetId'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
+      branchName: map['branchName'] as String?,
+      vetName: map['vetName'] as String?,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
@@ -62,6 +68,8 @@ class TreatmentModel {
       'status': status,
       'vetId': vetId,
       'branchId': branchId,
+      if (branchName != null) 'branchName': branchName,
+      if (vetName != null) 'vetName': vetName,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -77,6 +85,8 @@ class TreatmentModel {
     String? status,
     String? vetId,
     String? branchId,
+    String? branchName,
+    String? vetName,
     DateTime? createdAt,
   }) {
     return TreatmentModel(
@@ -90,6 +100,8 @@ class TreatmentModel {
       status: status ?? this.status,
       vetId: vetId ?? this.vetId,
       branchId: branchId ?? this.branchId,
+      branchName: branchName ?? this.branchName,
+      vetName: vetName ?? this.vetName,
       createdAt: createdAt ?? this.createdAt,
     );
   }

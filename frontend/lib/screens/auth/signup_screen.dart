@@ -456,7 +456,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'Create Account',
+                                    'SIGN UP',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 0.2,

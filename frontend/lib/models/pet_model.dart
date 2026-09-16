@@ -15,6 +15,7 @@ class PetModel {
   final String microchipId;
   final String ownerId;
   final String? photoUrl;
+  final double? weightKg;
   final DateTime createdAt;
 
   const PetModel({
@@ -27,6 +28,7 @@ class PetModel {
     required this.microchipId,
     required this.ownerId,
     this.photoUrl,
+    this.weightKg,
     required this.createdAt,
   });
 
@@ -63,6 +65,7 @@ class PetModel {
       microchipId: map['microchipId'] as String? ?? '',
       ownerId: map['ownerId'] as String? ?? '',
       photoUrl: map['photoUrl'] as String?,
+      weightKg: (map['weightKg'] as num?)?.toDouble() ?? (map['weight'] as num?)?.toDouble(),
       createdAt: _parseDateTime(map['createdAt']),
     );
   }
@@ -83,6 +86,7 @@ class PetModel {
       'microchipId': microchipId,
       'ownerId': ownerId,
       'photoUrl': photoUrl,
+      if (weightKg != null) 'weightKg': weightKg,
       'createdAt': Timestamp.fromDate(createdAt),
     };
   }
@@ -98,6 +102,7 @@ class PetModel {
     String? microchipId,
     String? ownerId,
     String? photoUrl,
+    double? weightKg,
     DateTime? createdAt,
   }) {
     return PetModel(
@@ -110,6 +115,7 @@ class PetModel {
       microchipId: microchipId ?? this.microchipId,
       ownerId: ownerId ?? this.ownerId,
       photoUrl: photoUrl ?? this.photoUrl,
+      weightKg: weightKg ?? this.weightKg,
       createdAt: createdAt ?? this.createdAt,
     );
   }

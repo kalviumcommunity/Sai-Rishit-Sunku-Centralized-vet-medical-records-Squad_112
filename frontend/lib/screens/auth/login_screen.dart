@@ -353,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'Sign In to Account',
+                                    'LOG IN',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 0.2,
