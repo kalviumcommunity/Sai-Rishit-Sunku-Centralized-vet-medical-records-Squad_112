@@ -122,6 +122,7 @@ Stores patient profiles. Medical history follows this entity regardless of which
 | Field Name | Firestore Type | Dart Type | Nullable | Description / UI Mapping |
 | :--- | :--- | :--- | :--- | :--- |
 | `name` | `string` | `String` | No | Pet's name (e.g., "Milo") |
+| `nameLower` | `string` | `String` | No | **[Indexed]** Lowercase name for prefix queries (`nameLower >= q && nameLower <= q + '\uf8ff'`) |
 | `species` | `string` | `String` | No | Animal species (e.g., "Dog", "Cat", "Bird") |
 | `breed` | `string` | `String` | No | Breed designation (e.g., "Golden Retriever") |
 | `gender` | `string` | `String` | No | Enum: `'male'`, `'female'`, `'neutered_male'`, `'spayed_female'` |
@@ -129,18 +130,29 @@ Stores patient profiles. Medical history follows this entity regardless of which
 | `microchipId` | `string` | `String` | No | **[Updated]** Global ISO microchip / tag identifier for cross-branch lookup |
 | `ownerId` | `string` | `String` | No | UID of the pet owner (`users/{uid}`) |
 | `photoUrl` | `string` | `String?` | **Yes** | Cloud Storage download URL. Null falls back to default avatar icon |
+| `weightKg` | `number` | `double?` | **Yes** | Patient weight in kilograms |
 | `createdAt` | `timestamp` | `DateTime` | No | Timestamp of pet registration |
 
-#### Microchip ID Policy & Security Rules (Day 3 / Stress-Tested)
-- **Write-Once Immutability (`microchipId`)**:
-  - `microchipId` is **settable only during pet document creation** and is strictly **immutable thereafter** (`request.resource.data.microchipId == resource.data.microchipId`).
-  - *Architectural Rationale*: A microchip is a permanent, ISO-standard RFID transponder physically implanted in the pet. It does not realistically change over an animal's lifetime. Freezing it prevents accidental overwrite, fraudulent ownership disputes, and cross-branch patient identity desynchronization.
-- **Cross-Branch Vet Discovery**:
-  - `read`: Vets across *all* clinic branches have global read access to `pets` documents (`isVet()`). This enables centralized search by microchip ID or name when a pet visits any clinic branch in the network.
-  - Owners can read only their own pets (`resource.data.ownerId == request.auth.uid`).
-- **Core Info Modification Protection**:
-  - `update` / `delete`: Only the pet's registered owner (`resource.data.ownerId == request.auth.uid`) or a network administrator (`isAdmin()`) can modify or delete core pet profile details.
-  - Attending vets cannot alter core demographic fields (such as breed, species, birth date, or microchip ID); vets interact with patient records by appending new `treatments`, `vaccinations`, or `medical_documents`.
+#### Cross-Branch Search & Query Architecture
+1. **Case-Insensitive Prefix Search (`nameLower`)**:
+   - Cloud Firestore does not support native substring or case-insensitive search.
+   - Every pet document persists `nameLower: pet.name.toLowerCase()`.
+   - Prefix queries execute as:
+     `db.collection('pets').where('nameLower', isGreaterThanOrEqualTo: term.toLowerCase()).where('nameLower', isLessThanOrEqualTo: '${term.toLowerCase()}\uf8ff')`
+2. **Owner-Based Patient Lookup**:
+   - Query: `db.collection('pets').where('ownerId', isEqualTo: ownerUid).orderBy('createdAt', descending: true)`
+3. **Client-Side Quick Filter Chips (Recommended Architecture)**:
+   - The Vet Search Screen contains quick filter chips: **Dogs**, **Cats**, **Urgent Care**, **Due for Booster**.
+   - **Recommendation**: Execute primary prefix retrieval on Firestore (`nameLower` or `microchipId`), then apply secondary chip filters **client-side in memory** on the returned result set.
+   - *Why*: Creating Firestore composite indexes for every combination of `(species, urgentCare, dueForBooster, nameLower, createdAt)` causes severe index sprawl, increases write costs, and creates fragile index dependencies for auxiliary filters.
+
+#### Record Edit/Delete Scoping Policy (Treatments & Vaccinations)
+- **Policy**: **Strict Creator-Only (or Network Admin)**.
+  - A veterinarian **cannot** edit or delete a clinical treatment or vaccination record authored by a colleague vet, even if both vets work at the identical clinic branch.
+- **Justification**:
+  1. *Medical & Legal Auditability*: Clinical notes, drug dosages, and vaccination signatures constitute personal medical records tied to a veterinarian's professional license. Allowing peers at the same branch to mutate historical consultation notes creates liability ambiguity and breaks tamper-evidence.
+  2. *Addendum Pattern*: If a second vet at the same clinic assesses the patient during follow-up, they create a new treatment record with its own `diagnosis`, `medication`, and `followUpDate`, rather than altering the prior vet's entry.
+  3. *Administrative Oversight*: If an accidental typo or bad record must be removed or amended, only a Network Administrator (`role: 'admin'`) or the original attending vet has deletion rights.
 
 #### Pets Role-Based Permissions Matrix
 | Action | Pet Owner (Own Pet) | Pet Owner (Other's Pet) | Veterinarian (`role: 'vet'`) | Network Admin (`role: 'admin'`) | Unregistered / No Role |
