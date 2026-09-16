@@ -68,7 +68,7 @@ class PetProfileScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    'Dachshund • 3 Years Old',
+                    'Dachshund \u2022 3 Years Old',
                     style: TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -205,7 +205,18 @@ class PetProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, size: 20, color: AppColors.textMuted),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppColors.lightPill,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border.withValues(alpha: 0.6), width: 1),
+              ),
+              child: const Center(
+                child: Icon(Icons.arrow_forward_ios, size: 11, color: AppColors.textSecondary),
+              ),
+            ),
           ],
         ),
       ),

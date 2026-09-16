@@ -25,7 +25,7 @@ class VaccinationsScreen extends StatelessWidget {
                         Text('Rabies 3-Year Vaccine', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 2),
                         const Text(
-                          'Administered: Jan 15, 2026 • Clinic: Downtown Branch',
+                          'Administered: Jan 15, 2026 \u2022 Clinic: Downtown Branch',
                           style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 2),
@@ -51,7 +51,7 @@ class VaccinationsScreen extends StatelessWidget {
                         Text('DHPP Booster', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: 2),
                         const Text(
-                          'Administered: Mar 10, 2026 • Clinic: Westside Branch',
+                          'Administered: Mar 10, 2026 \u2022 Clinic: Westside Branch',
                           style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                         ),
                         const SizedBox(height: 2),
