@@ -613,7 +613,27 @@ class MedicalRecordsService {
     if (Firebase.apps.isNotEmpty) {
       try {
         final firestore = FirebaseFirestore.instance;
-        final petSnapshot = await firestore.collection('pets').get();
+        final trimmed = query.trim().toLowerCase();
+
+        QuerySnapshot<Map<String, dynamic>> petSnapshot;
+        if (trimmed.isNotEmpty) {
+          // Utilize Supreeth's nameLower prefix index:
+          // nameLower >= trimmed && nameLower <= trimmed + '\uf8ff'
+          final prefixSnapshot = await firestore
+              .collection('pets')
+              .where('nameLower', isGreaterThanOrEqualTo: trimmed)
+              .where('nameLower', isLessThanOrEqualTo: '$trimmed\uf8ff')
+              .get();
+
+          if (prefixSnapshot.docs.isNotEmpty) {
+            petSnapshot = prefixSnapshot;
+          } else {
+            // Fall back to all pets so microchip/breed/owner search can also match
+            petSnapshot = await firestore.collection('pets').get();
+          }
+        } else {
+          petSnapshot = await firestore.collection('pets').get();
+        }
 
         if (petSnapshot.docs.isNotEmpty) {
           for (final doc in petSnapshot.docs) {
@@ -655,12 +675,13 @@ class MedicalRecordsService {
       allResults = getFallbackPetSearchResults();
     }
 
-    // Client-side text query search by pet name or microchip
+    // Client-side text query search by pet name (including nameLower) or microchip
     final trimmedQuery = query.trim().toLowerCase();
     List<VetPetSearchResult> filtered = allResults;
     if (trimmedQuery.isNotEmpty) {
       filtered = filtered.where((item) {
-        final nameMatches = item.pet.name.toLowerCase().contains(trimmedQuery);
+        final nameMatches = item.pet.nameLower.contains(trimmedQuery) ||
+            item.pet.name.toLowerCase().contains(trimmedQuery);
         final breedMatches = item.pet.breed.toLowerCase().contains(trimmedQuery);
         final chipMatches = item.pet.microchipId.toLowerCase().contains(trimmedQuery);
         final ownerMatches = item.ownerName.toLowerCase().contains(trimmedQuery);
@@ -792,7 +813,10 @@ class MedicalRecordsService {
   /// Fetches scheduled patient follow-ups due in the coming week.
   /// Cross-branch query: pulls treatments where followUpDate is set,
   /// regardless of which branch created the treatment.
-  Future<List<VetFollowupItem>> fetchUpcomingFollowups({String? filterCategory}) async {
+  Future<List<VetFollowupItem>> fetchUpcomingFollowups({
+    String? filterCategory,
+    String? vetBranchId,
+  }) async {
     List<VetFollowupItem> items = [];
 
     if (Firebase.apps.isNotEmpty) {
@@ -801,12 +825,16 @@ class MedicalRecordsService {
         final now = DateTime.now();
         final weekAhead = now.add(const Duration(days: 7));
 
-        // Pull treatments across the network with follow-up scheduled
-        final snapshot = await firestore
-            .collection('treatments')
+        // Pull treatments across the network (or for vetBranchId using composite index)
+        Query<Map<String, dynamic>> query = firestore.collection('treatments');
+        if (vetBranchId != null && vetBranchId.isNotEmpty) {
+          query = query.where('branchId', isEqualTo: vetBranchId);
+        }
+        query = query
             .where('followUpDate', isGreaterThanOrEqualTo: Timestamp.fromDate(now.subtract(const Duration(days: 1))))
-            .where('followUpDate', isLessThanOrEqualTo: Timestamp.fromDate(weekAhead))
-            .get();
+            .where('followUpDate', isLessThanOrEqualTo: Timestamp.fromDate(weekAhead));
+
+        final snapshot = await query.get();
 
         if (snapshot.docs.isNotEmpty) {
           for (final doc in snapshot.docs) {

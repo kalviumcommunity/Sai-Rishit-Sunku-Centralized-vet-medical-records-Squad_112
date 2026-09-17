@@ -19,7 +19,7 @@ class PetModel {
   final double? weightKg;
   final DateTime createdAt;
 
-  const PetModel({
+  PetModel({
     required this.id,
     required this.name,
     String? nameLower,
