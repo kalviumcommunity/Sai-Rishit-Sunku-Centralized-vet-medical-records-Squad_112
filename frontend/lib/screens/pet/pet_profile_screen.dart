@@ -64,11 +64,26 @@ class _PetProfileScreenState extends State<PetProfileScreen> {
   List<UnifiedMedicalRecord> _records = [];
   List<VaccinationModel> _vaccinations = [];
 
+  bool _didCheckRouteArgs = false;
+
   @override
   void initState() {
     super.initState();
     _activeTabIndex = widget.initialTabIndex;
     _initPetData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_didCheckRouteArgs) {
+      _didCheckRouteArgs = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is PetModel) {
+        _pet = args;
+        _loadData();
+      }
+    }
   }
 
   void _initPetData() {
