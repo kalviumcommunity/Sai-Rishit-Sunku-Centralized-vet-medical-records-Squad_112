@@ -195,9 +195,20 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // BRANCHES COLLECTION
+    // ============================================================================
+    // - Authenticated users (owners, vets, admins) can read clinic branch directory.
+    // - Creation, update, and deletion restricted to network administrators.
+    // ============================================================================
+    match /branches/{branchId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ============================================================================
     // DEFAULT DENY ALL (PROGRESSIVE SCOPING)
     // ============================================================================
-    // Remaining collections (branches, medical_documents) will be scoped next.
+    // Remaining collections (medical_documents) will be scoped next.
     // ============================================================================
     match /{document=**} {
       allow read, write: if false;

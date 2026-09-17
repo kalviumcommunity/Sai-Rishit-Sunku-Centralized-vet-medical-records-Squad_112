@@ -1,0 +1,84 @@
+{
+  "branches": {
+    "branch_koramangala": {
+      "name": "VetCare Central - Koramangala",
+      "address": "80 Feet Rd, 4th Block, Koramangala, Bengaluru, Karnataka 560034",
+      "phone": "+91 80 2553 1001",
+      "isHub": true,
+      "createdAt": "2026-08-01T09:00:00.000Z"
+    },
+    "branch_whitefield": {
+      "name": "VetCare Satellite - Whitefield",
+      "address": "ITPL Main Rd, near Hope Farm Junction, Whitefield, Bengaluru, Karnataka 560066",
+      "phone": "+91 80 4125 3002",
+      "isHub": false,
+      "createdAt": "2026-08-15T09:00:00.000Z"
+    }
+  },
+  "users": {
+    "user_rishi_owner": {
+      "name": "Rishi",
+      "email": "rishi@vetcare.com",
+      "role": "owner",
+      "branchId": null,
+      "createdAt": "2026-09-01T10:00:00.000Z"
+    },
+    "user_dr_sharma": {
+      "name": "Dr. Sharma",
+      "email": "dr.sharma@vetcare.com",
+      "role": "vet",
+      "branchId": "branch_koramangala",
+      "createdAt": "2026-08-05T08:30:00.000Z"
+    },
+    "user_dr_patel": {
+      "name": "Dr. Patel",
+      "email": "dr.patel@vetcare.com",
+      "role": "vet",
+      "branchId": "branch_whitefield",
+      "createdAt": "2026-08-20T08:30:00.000Z"
+    }
+  },
+  "pets": {
+    "pet_bruno_001": {
+      "name": "Bruno",
+      "nameLower": "bruno",
+      "species": "Dog",
+      "breed": "Golden Retriever",
+      "gender": "male",
+      "dateOfBirth": "2022-04-10T00:00:00.000Z",
+      "microchipId": "#VT-8820",
+      "ownerId": "user_rishi_owner",
+      "photoUrl": "https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&auto=format&fit=crop&q=80",
+      "weightKg": 31.5,
+      "createdAt": "2026-09-02T11:00:00.000Z"
+    }
+  },
+  "treatments": {
+    "treatment_bruno_001": {
+      "petId": "pet_bruno_001",
+      "diagnosis": "Canine Atopic Dermatitis & Ear Erythema",
+      "medication": "Apoquel 16mg SID x 14d, Otomax Ear Drops BID x 7d",
+      "notes": "Patient presented with severe pruritus, pedal licking, and bilateral pinnal erythema. Cytology shows secondary Malassezia overgrowth. Prescribed anti-inflammatory protocol and medicated wash.",
+      "treatmentDate": "2026-09-10T11:30:00.000Z",
+      "followUpDate": "2026-09-24T11:30:00.000Z",
+      "status": "active",
+      "vetId": "user_dr_sharma",
+      "branchId": "branch_koramangala",
+      "vetName": "Dr. Sharma",
+      "branchName": "VetCare Central - Koramangala",
+      "createdAt": "2026-09-10T11:45:00.000Z"
+    }
+  },
+  "vaccinations": {
+    "vaccination_bruno_001": {
+      "petId": "pet_bruno_001",
+      "vaccineName": "Rabies 3-Year (Defensor 3)",
+      "dateGiven": "2026-04-15T10:00:00.000Z",
+      "nextDueDate": "2029-04-15T10:00:00.000Z",
+      "vetId": "user_dr_sharma",
+      "branchId": "branch_koramangala",
+      "notes": "Administered right hind subcutaneous. Batch #RB-9941. No immediate adverse reaction.",
+      "createdAt": "2026-04-15T10:15:00.000Z"
+    }
+  }
+}
