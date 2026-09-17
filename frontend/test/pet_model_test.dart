@@ -65,6 +65,27 @@ void main() {
       expect(pet.ageYears, 2);
     });
 
+    test('nameLower automatically computes and serializes for search', () {
+      final pet = PetModel(
+        id: 'pet_search_test',
+        name: 'Maximus Prime',
+        species: 'Dog',
+        breed: 'Husky',
+        gender: 'male',
+        dateOfBirth: DateTime(2023, 1, 1),
+        microchipId: '985141005555555',
+        ownerId: 'owner_test',
+        createdAt: DateTime.now(),
+      );
+
+      expect(pet.nameLower, 'maximus prime');
+      final map = pet.toMap();
+      expect(map['nameLower'], 'maximus prime');
+
+      final fromMapPet = PetModel.fromMap(map, 'pet_search_test');
+      expect(fromMapPet.nameLower, 'maximus prime');
+    });
+
     test('copyWith properly updates fields while keeping microchipId intact', () {
       final pet = PetModel(
         id: 'pet_copy_test',
@@ -80,6 +101,7 @@ void main() {
 
       final updated = pet.copyWith(name: 'Bella Luna');
       expect(updated.name, 'Bella Luna');
+      expect(updated.nameLower, 'bella luna');
       expect(updated.microchipId, '985141007777777');
       expect(updated.species, 'Dog');
       expect(updated.breed, 'Beagle');

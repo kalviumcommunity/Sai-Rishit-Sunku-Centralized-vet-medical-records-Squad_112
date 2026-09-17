@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PetModel {
   final String id;
   final String name;
+  final String nameLower;
   final String species;
   final String breed;
   final String gender;
@@ -21,6 +22,7 @@ class PetModel {
   const PetModel({
     required this.id,
     required this.name,
+    String? nameLower,
     required this.species,
     required this.breed,
     required this.gender,
@@ -30,7 +32,7 @@ class PetModel {
     this.photoUrl,
     this.weightKg,
     required this.createdAt,
-  });
+  }) : nameLower = nameLower ?? name.toLowerCase();
 
   /// Computes the pet's age in whole years.
   int get ageYears {
@@ -55,9 +57,11 @@ class PetModel {
 
   /// Construct a [PetModel] from a plain map and a document ID.
   factory PetModel.fromMap(Map<String, dynamic> map, String id) {
+    final rawName = map['name'] as String? ?? '';
     return PetModel(
       id: id,
-      name: map['name'] as String? ?? '',
+      name: rawName,
+      nameLower: map['nameLower'] as String? ?? rawName.toLowerCase(),
       species: map['species'] as String? ?? '',
       breed: map['breed'] as String? ?? '',
       gender: map['gender'] as String? ?? 'unknown',
@@ -79,6 +83,7 @@ class PetModel {
   Map<String, dynamic> toMap() {
     return {
       'name': name,
+      'nameLower': nameLower.isNotEmpty ? nameLower : name.toLowerCase(),
       'species': species,
       'breed': breed,
       'gender': gender,
@@ -95,6 +100,7 @@ class PetModel {
   PetModel copyWith({
     String? id,
     String? name,
+    String? nameLower,
     String? species,
     String? breed,
     String? gender,
@@ -105,9 +111,11 @@ class PetModel {
     double? weightKg,
     DateTime? createdAt,
   }) {
+    final updatedName = name ?? this.name;
     return PetModel(
       id: id ?? this.id,
-      name: name ?? this.name,
+      name: updatedName,
+      nameLower: nameLower ?? (name != null ? updatedName.toLowerCase() : this.nameLower),
       species: species ?? this.species,
       breed: breed ?? this.breed,
       gender: gender ?? this.gender,

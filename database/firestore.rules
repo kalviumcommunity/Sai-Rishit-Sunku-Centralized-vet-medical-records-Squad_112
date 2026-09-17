@@ -142,16 +142,17 @@ service cloud.firestore {
         && request.resource.data.branchId == getUserData().branchId
         && request.resource.data.createdAt == request.time;
 
-      // Update: Only the creating vet or an admin can edit a treatment record.
+      // Update: STRICT POLICY - A colleague vet at the same branch CANNOT edit another vet's record.
+      // Only the exact original creator (vetId == auth.uid) or a Network Admin can edit.
       // Immutable fields: petId, vetId, branchId, and createdAt cannot be changed.
-      allow update: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin()
+      allow update: if ((isVet() && resource.data.vetId == request.auth.uid) || isAdmin())
         && request.resource.data.status in ['active', 'resolved']
         && request.resource.data.petId == resource.data.petId
         && request.resource.data.vetId == resource.data.vetId
         && request.resource.data.branchId == resource.data.branchId
         && request.resource.data.createdAt == resource.data.createdAt;
 
-      // Delete: Only the creating vet or an admin can delete a treatment.
+      // Delete: Only original creating vet or admin. Colleague vets at the same branch are DENIED.
       allow delete: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin();
     }
 
@@ -163,7 +164,7 @@ service cloud.firestore {
     // - Creation: ONLY by authenticated vets, for existing pets only.
     // - Anti-Spoofing: vetId and branchId must match authenticated vet's profile.
     // - Server Timestamp: createdAt must be request.time.
-    // - Edit/Delete: Only creating vet or admin.
+    // - Edit/Delete: Strict Creator-Only Policy - colleague vets at the same branch CANNOT edit/delete.
     // ============================================================================
     match /vaccinations/{vaccinationId} {
       // Read: Any vet, admin, or the pet's owner.
@@ -180,15 +181,16 @@ service cloud.firestore {
         && request.resource.data.branchId == getUserData().branchId
         && request.resource.data.createdAt == request.time;
 
-      // Update: Only the administering vet or admin.
+      // Update: STRICT POLICY - Colleague vets at the same branch CANNOT edit another vet's vaccination.
+      // Only the exact administering vet (vetId == auth.uid) or an admin can edit.
       // Immutable fields: petId, vetId, branchId, and createdAt cannot be tampered with.
-      allow update: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin()
+      allow update: if ((isVet() && resource.data.vetId == request.auth.uid) || isAdmin())
         && request.resource.data.petId == resource.data.petId
         && request.resource.data.vetId == resource.data.vetId
         && request.resource.data.branchId == resource.data.branchId
         && request.resource.data.createdAt == resource.data.createdAt;
 
-      // Delete: Only administering vet or admin.
+      // Delete: Only administering vet or admin. Colleague vets at the same branch are DENIED.
       allow delete: if (isVet() && resource.data.vetId == request.auth.uid) || isAdmin();
     }
 
