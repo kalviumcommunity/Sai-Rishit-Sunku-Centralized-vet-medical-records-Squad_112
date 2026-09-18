@@ -559,6 +559,67 @@ class _PetProfileScreenState extends State<PetProfileScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Quick Actions: Add Treatment & Documents (Day 11 & Day 12 Integration)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.of(context).pushNamed(
+                          AppRoutes.addTreatment,
+                          arguments: _pet,
+                        );
+                        if (result == true) {
+                          _loadData();
+                        }
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 16, color: AppColors.primary),
+                      label: const Text(
+                        'Add Treatment',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primary, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        backgroundColor: const Color(0xFFFFF7ED),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pushNamed(
+                          AppRoutes.documents,
+                          arguments: _pet,
+                        );
+                      },
+                      icon: const Icon(Icons.folder_shared_outlined, size: 16, color: Color(0xFF4B5563)),
+                      label: const Text(
+                        'Documents',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: AppSpacing.md),
 
               if (displayedRecords.isEmpty)
