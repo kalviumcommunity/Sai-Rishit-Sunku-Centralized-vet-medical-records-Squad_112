@@ -111,6 +111,8 @@ class MedicalRecordsService {
     'branch_westside': 'Westside Branch',
     'branch_metro_hub': 'Central Metro Hub',
     'branch_north': 'North Satellite Clinic',
+    'branch_koramangala': 'VetCare Central - Koramangala',
+    'branch_whitefield': 'VetCare Satellite - Whitefield',
   };
 
   /// Map of known vet names fallback
@@ -119,6 +121,8 @@ class MedicalRecordsService {
     'vet_chang': 'Dr. Michael Chang, DVM',
     'vet_emily': 'Dr. Emily Davis, DVM',
     'vet_john': 'Dr. John Doe, DVM',
+    'user_dr_sharma': 'Dr. Sharma',
+    'user_dr_patel': 'Dr. Patel',
   };
 
   /// Seed initial cross-branch records for demo/offline parity (Milo)
@@ -497,6 +501,28 @@ class MedicalRecordsService {
         lastConsultationDate: now.subtract(const Duration(days: 12)),
         hasUrgentCare: false,
         isDueForBooster: true,
+      ),
+      VetPetSearchResult(
+        pet: PetModel(
+          id: 'pet_bruno_001',
+          name: 'Bruno',
+          nameLower: 'bruno',
+          species: 'Dog',
+          breed: 'Golden Retriever',
+          gender: 'male',
+          dateOfBirth: DateTime(2022, 4, 10),
+          microchipId: '#VT-8820',
+          ownerId: 'user_rishi_owner',
+          photoUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&auto=format&fit=crop&q=80',
+          weightKg: 31.5,
+          createdAt: DateTime(2026, 9, 2),
+        ),
+        ownerName: 'Rishi',
+        distinctBranchCount: 1,
+        branches: const ['VetCare Central - Koramangala'],
+        lastConsultationDate: DateTime(2026, 9, 10),
+        hasUrgentCare: true,
+        isDueForBooster: false,
       ),
       VetPetSearchResult(
         pet: PetModel(
