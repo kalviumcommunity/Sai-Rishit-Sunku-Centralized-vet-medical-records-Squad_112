@@ -1,11 +1,14 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/pet_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/medical_records_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/custom_card.dart';
 import '../main_navigation_shell.dart';
@@ -13,7 +16,7 @@ import '../main_navigation_shell.dart';
 /// DAY 5 — Add Pet Form
 /// Features:
 /// - Back button + "Add Pet" header with small paw icon
-/// - Dashed-border "Add Photo" upload placeholder
+/// - Interactive "Add Photo" upload & mascot avatar picker
 /// - Pet Name (required)
 /// - Species selector shown as three pill buttons (Dog / Cat / Other, not a dropdown)
 /// - Breed field
@@ -21,7 +24,7 @@ import '../main_navigation_shell.dart';
 /// - Date of Birth (date picker, validated as past date)
 /// - Microchip ID (with auto-generation fallback for Firestore rule parity)
 /// - Static note: "Automatic Multi-Branch Sync — Medical charts accessible across all VetCare clinics."
-/// - Firestore pets document write with ownerId & server timestamp
+/// - Instant reactive registration in MedicalRecordsService + background Firestore persistence
 /// - Loading state and success confirmation SnackBar
 class AddPetScreen extends StatefulWidget {
   final bool isEmbeddedInNav;
@@ -45,6 +48,10 @@ class _AddPetScreenState extends State<AddPetScreen> {
   String _selectedGender = 'male'; // 'male', 'female'
   DateTime? _selectedDateOfBirth;
   bool _isSaving = false;
+
+  Uint8List? _photoBytes;
+  String? _selectedAvatarUrl;
+  String? _selectedAvatarLabel;
 
   @override
   void dispose() {
@@ -82,6 +89,197 @@ class _AddPetScreenState extends State<AddPetScreen> {
         _selectedDateOfBirth = picked;
       });
     }
+  }
+
+  Future<void> _pickPhoto() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: const BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.all(Radius.circular(2)),
+                    ),
+                  ),
+                ),
+                const Text(
+                  'Choose Pet Photo or Mascot Avatar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight.withValues(alpha: 0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                  ),
+                  title: const Text(
+                    'Upload from Device / Gallery',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: const Text('Select a JPG, PNG, or WEBP file'),
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      final file = await FilePicker.pickFile(
+                        type: FileType.custom,
+                        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                      );
+                      if (file != null) {
+                        final bytes = await file.readAsBytes();
+                        setState(() {
+                          _photoBytes = bytes;
+                          _selectedAvatarUrl = null;
+                          _selectedAvatarLabel = file.name;
+                        });
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Notice: $e')),
+                        );
+                      }
+                    }
+                  },
+                ),
+                const Divider(height: 24),
+                const Text(
+                  'Or Pick a Mascot Avatar',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildAvatarPreset(
+                      icon: Icons.pets,
+                      label: 'Golden',
+                      color: const Color(0xFFFED7AA),
+                      url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&auto=format&fit=crop&q=80',
+                      onSelect: (url, label) {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _selectedAvatarUrl = url;
+                          _selectedAvatarLabel = label;
+                          _photoBytes = null;
+                        });
+                      },
+                    ),
+                    _buildAvatarPreset(
+                      icon: Icons.pets,
+                      label: 'Tabby Cat',
+                      color: const Color(0xFFFDE68A),
+                      url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&auto=format&fit=crop&q=80',
+                      onSelect: (url, label) {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _selectedAvatarUrl = url;
+                          _selectedAvatarLabel = label;
+                          _photoBytes = null;
+                        });
+                      },
+                    ),
+                    _buildAvatarPreset(
+                      icon: Icons.cruelty_free,
+                      label: 'Canary',
+                      color: const Color(0xFFFEF08A),
+                      url: 'https://images.unsplash.com/photo-1522858547550-340574cd2f33?w=400&auto=format&fit=crop&q=80',
+                      onSelect: (url, label) {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _selectedAvatarUrl = url;
+                          _selectedAvatarLabel = label;
+                          _photoBytes = null;
+                        });
+                      },
+                    ),
+                    _buildAvatarPreset(
+                      icon: Icons.cruelty_free_outlined,
+                      label: 'Bunny',
+                      color: const Color(0xFFE9D5FF),
+                      url: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&auto=format&fit=crop&q=80',
+                      onSelect: (url, label) {
+                        Navigator.pop(ctx);
+                        setState(() {
+                          _selectedAvatarUrl = url;
+                          _selectedAvatarLabel = label;
+                          _photoBytes = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAvatarPreset({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required String url,
+    required void Function(String url, String label) onSelect,
+  }) {
+    return GestureDetector(
+      onTap: () => onSelect(url, label),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: color,
+              border: Border.all(color: AppColors.border, width: 1.5),
+            ),
+            child: Center(
+              child: Icon(icon, color: AppColors.darkPill, size: 24),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _handleSavePet() async {
@@ -143,26 +341,23 @@ class _AddPetScreenState extends State<AddPetScreen> {
     try {
       final authService = context.read<AuthService>();
       final ownerId = authService.currentUser?.uid ?? 'guest_owner';
+      final docId = 'pet_${now.millisecondsSinceEpoch}';
 
-      // Save to Cloud Firestore 'pets' collection if Firebase is active
-      if (Firebase.apps.isNotEmpty) {
-        final firestore = FirebaseFirestore.instance;
-        final docRef = firestore.collection('pets').doc();
+      final newPet = PetModel(
+        id: docId,
+        name: name,
+        species: _selectedSpecies,
+        breed: breed.isNotEmpty ? breed : 'Mixed',
+        gender: _selectedGender,
+        dateOfBirth: _selectedDateOfBirth!,
+        microchipId: microchipId,
+        ownerId: ownerId,
+        photoUrl: _selectedAvatarUrl,
+        createdAt: now,
+      );
 
-        final newPet = PetModel(
-          id: docRef.id,
-          name: name,
-          species: _selectedSpecies,
-          breed: breed.isNotEmpty ? breed : 'Mixed',
-          gender: _selectedGender,
-          dateOfBirth: _selectedDateOfBirth!,
-          microchipId: microchipId,
-          ownerId: ownerId,
-          createdAt: DateTime.now(),
-        );
-
-        await docRef.set(newPet.toMap()).timeout(const Duration(seconds: 10));
-      }
+      // Register immediately into reactive app store & sync to Firestore in background
+      await MedicalRecordsService().registerPet(newPet);
 
       if (!mounted) return;
 
@@ -241,53 +436,87 @@ class _AddPetScreenState extends State<AddPetScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Dashed-Border "Add Photo" Upload Placeholder
+                  // Dashed-Border "Add Photo" Upload Placeholder with Interactive Picker
                   Center(
                     child: GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Photo upload is optional for this MVP.'),
-                            duration: Duration(seconds: 2),
+                      onTap: _pickPhoto,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 110,
+                            height: 110,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.primaryLight.withValues(alpha: 0.4),
+                            ),
+                            child: _photoBytes != null
+                                ? ClipOval(
+                                    child: Image.memory(
+                                      _photoBytes!,
+                                      width: 110,
+                                      height: 110,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : _selectedAvatarUrl != null
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          _selectedAvatarUrl!,
+                                          width: 110,
+                                          height: 110,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (ctx, err, st) => const Icon(
+                                            Icons.pets,
+                                            size: 40,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      )
+                                    : CustomPaint(
+                                        painter: DashedCirclePainter(
+                                          color: AppColors.primary.withValues(alpha: 0.6),
+                                          strokeWidth: 1.8,
+                                          dashWidth: 6,
+                                          dashSpace: 4,
+                                        ),
+                                        child: const Center(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.add_a_photo_outlined,
+                                                size: 28,
+                                                color: AppColors.primary,
+                                              ),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                'Add Photo',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
                           ),
-                        );
-                      },
-                      child: Container(
-                        width: 110,
-                        height: 110,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primaryLight.withValues(alpha: 0.4),
-                        ),
-                        child: CustomPaint(
-                          painter: DashedCirclePainter(
-                            color: AppColors.primary.withValues(alpha: 0.6),
-                            strokeWidth: 1.8,
-                            dashWidth: 6,
-                            dashSpace: 4,
-                          ),
-                          child: const Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.add_a_photo_outlined,
-                                  size: 28,
-                                  color: AppColors.primary,
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Add Photo',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ],
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ),

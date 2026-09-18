@@ -206,9 +206,25 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // DEFAULT DENY ALL (PROGRESSIVE SCOPING)
+    // MEDICAL_DOCUMENTS COLLECTION (DAY 12)
     // ============================================================================
-    // Remaining collections (medical_documents) will be scoped next.
+    // - Read: Any authenticated user (cross-branch access for vets and owners)
+    // - Create: Authenticated users (vets or owners) attaching petId, fileName, fileUrl
+    // - Delete: Creating user or admin
+    // ============================================================================
+    match /medical_documents/{documentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated()
+        && request.resource.data.petId is string
+        && request.resource.data.fileName is string
+        && request.resource.data.fileUrl is string
+        && request.resource.data.uploadedBy == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+      allow update, delete: if (isAuthenticated() && resource.data.uploadedBy == request.auth.uid) || isAdmin();
+    }
+
+    // ============================================================================
+    // DEFAULT DENY ALL (PROGRESSIVE SCOPING)
     // ============================================================================
     match /{document=**} {
       allow read, write: if false;

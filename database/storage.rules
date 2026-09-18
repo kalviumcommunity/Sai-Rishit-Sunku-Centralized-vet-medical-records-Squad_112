@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Medical documents stored under pets/{petId}/documents/{fileName}
+    match /pets/{petId}/documents/{fileName} {
+      // Authenticated users (pet owners, veterinarians, admins) can access medical documents
+      allow read: if request.auth != null;
+
+      // Authenticated users can upload documents with maximum 15MB size limit
+      allow write: if request.auth != null
+                   && request.resource.size <= 15 * 1024 * 1024;
+
+      // Deletion restricted to authenticated users
+      allow delete: if request.auth != null;
+    }
+  }
+}

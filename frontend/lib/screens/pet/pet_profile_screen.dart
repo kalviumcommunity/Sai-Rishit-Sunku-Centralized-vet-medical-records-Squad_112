@@ -103,25 +103,30 @@ class _PetProfileScreenState extends State<PetProfileScreen> {
           createdAt: DateTime(now.year - 3, now.month, now.day),
         );
 
+    // Populate immediately for 0ms initial render
+    _records = _recordsService.getFallbackRecords(_pet.id);
+    _vaccinations = _recordsService.getFallbackVaccinations(_pet.id);
+    _isLoading = false;
+
     _loadData();
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
     try {
-      final records = await _recordsService.fetchMedicalHistory(_pet.id);
-      final vaccinations = await _recordsService.fetchVaccinations(_pet.id);
+      final results = await Future.wait([
+        _recordsService.fetchMedicalHistory(_pet.id),
+        _recordsService.fetchVaccinations(_pet.id),
+      ]).timeout(const Duration(seconds: 2));
 
       if (mounted) {
         setState(() {
-          _records = records;
-          _vaccinations = vaccinations;
+          _records = results[0] as List<UnifiedMedicalRecord>;
+          _vaccinations = results[1] as List<VaccinationModel>;
           _isLoading = false;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && _records.isEmpty) {
         setState(() {
           _records = _recordsService.getFallbackRecords(_pet.id);
           _vaccinations = _recordsService.getFallbackVaccinations(_pet.id);
@@ -323,14 +328,14 @@ class _PetProfileScreenState extends State<PetProfileScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Three info chips (Age / Weight / Gender)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // Three info chips (Age / Weight / Gender) — Wrap prevents overflow on narrow screens
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _buildInfoChip(label: 'Age', value: ageText, icon: Icons.cake_outlined),
-              const SizedBox(width: 8),
               _buildInfoChip(label: 'Weight', value: weightText, icon: Icons.scale_outlined),
-              const SizedBox(width: 8),
               _buildInfoChip(label: 'Gender', value: genderText, icon: Icons.pets_outlined),
             ],
           ),
@@ -554,6 +559,67 @@ class _PetProfileScreenState extends State<PetProfileScreen> {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+
+              // Quick Actions: Add Treatment & Documents (Day 11 & Day 12 Integration)
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final result = await Navigator.of(context).pushNamed(
+                          AppRoutes.addTreatment,
+                          arguments: _pet,
+                        );
+                        if (result == true) {
+                          _loadData();
+                        }
+                      },
+                      icon: const Icon(Icons.add_circle_outline_rounded, size: 16, color: AppColors.primary),
+                      label: const Text(
+                        'Add Treatment',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primary, width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        backgroundColor: const Color(0xFFFFF7ED),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pushNamed(
+                          AppRoutes.documents,
+                          arguments: _pet,
+                        );
+                      },
+                      icon: const Icon(Icons.folder_shared_outlined, size: 16, color: Color(0xFF4B5563)),
+                      label: const Text(
+                        'Documents',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFD1D5DB), width: 1.2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        backgroundColor: Colors.white,
                       ),
                     ),
                   ),
