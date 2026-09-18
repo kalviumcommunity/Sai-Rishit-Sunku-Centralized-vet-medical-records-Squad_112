@@ -247,7 +247,32 @@ Digital lab reports, radiograph (X-Ray) scans, prescriptions, and external recor
 | `fileUrl` | `string` | `String` | No | Download URL from Firebase Storage |
 | `uploadedBy` | `string` | `String` | No | UID of user who uploaded the file |
 | `branchId` | `string` | `String` | No | Clinic branch where document originated |
-| `createdAt` | `timestamp` | `DateTime` | No | Timestamp of upload |
+| `createdAt` | `timestamp` | `DateTime` | No | Timestamp of upload (`FieldValue.serverTimestamp()`) |
+
+#### Access Control vs. End-to-End Encryption (E2EE) Note
+> [!IMPORTANT]
+> **Clarification for UI Team & Marketing Copy:**
+> If UI labels claim documents are *"End-to-End Encrypted,"* please note that Firebase Storage and Firestore enforce **server-side Access Control Lists (ACLs)** and Google-managed encryption at rest and in transit (TLS 1.3). They are **not** client-side End-to-End Encrypted (E2EE). True E2EE would require client-side private key decryption, preventing cross-branch veterinarians from rendering lab PDFs and radiographs on demand. Recommend updating UI copy to: *"Protected by Centralized Role-Based Access Control"* or *"Encrypted at Rest & in Transit"*.
+
+#### Storage & Firestore Security Rules for Documents
+- **Read**: Pet's registered owner, any verified veterinarian (`isVet()`), or network admin (`isAdmin()`).
+- **Create / Upload**: Attending veterinarian, registered pet owner, or network admin. Storage enforced limit: `<= 25MB`.
+- **Delete**: Original uploader (`uploadedBy == auth.uid`) or network admin.
+
+---
+
+## 7. Admin Scope & Clinical Governance Boundary
+
+To maintain HIPAA/veterinary compliance, auditability, and data integrity:
+
+| Collection | Admin Read | Admin Write/Create | Admin Update/Delete | Justification |
+| :--- | :--- | :--- | :--- | :--- |
+| **`branches`** | ✅ Full | ✅ Full | ✅ Full | Network topology is strictly an admin responsibility. |
+| **`users`** | ✅ Full | ❌ Restricted | ✅ Full (Role/Status) | Admins manage branch assignments and disable rogue accounts. |
+| **`pets`** | ✅ Full | ✅ Allowed | ✅ Full | Registration assistance and demographic corrections. |
+| **`treatments`** | ✅ Full | ❌ **DENIED (Vet Only)** | ✅ Delete / Cleanup | **Clinical Boundary:** Admins are non-clinical operators; diagnostics and drug prescriptions require a licensed vet signature (`isVet()`). Admins can only delete corrupted test records. |
+| **`vaccinations`** | ✅ Full | ❌ **DENIED (Vet Only)** | ✅ Delete / Cleanup | **Clinical Boundary:** Vaccine batch administration requires an attending vet's professional license. |
+| **`medical_documents`**| ✅ Full | ✅ Allowed | ✅ Full (Uploader/Admin)| Administrative archival and lab upload support. |
 
 ---
 

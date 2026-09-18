@@ -195,7 +195,7 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // BRANCHES COLLECTION
+    // BRANCHES COLLECTION (DAY 14)
     // ============================================================================
     // - Authenticated users (owners, vets, admins) can read clinic branch directory.
     // - Creation, update, and deletion restricted to network administrators.
@@ -206,21 +206,31 @@ service cloud.firestore {
     }
 
     // ============================================================================
-    // MEDICAL_DOCUMENTS COLLECTION (DAY 12)
+    // MEDICAL_DOCUMENTS COLLECTION (DAY 13)
     // ============================================================================
-    // - Read: Any authenticated user (cross-branch access for vets and owners)
-    // - Create: Authenticated users (vets or owners) attaching petId, fileName, fileUrl
-    // - Delete: Creating user or admin
+    // - Readable by the pet's owner and any vet across branches (or admin)
+    // - Creatable by authorized vets or the pet owner
+    // - Deletable only by original uploader or admin
     // ============================================================================
     match /medical_documents/{documentId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated()
-        && request.resource.data.petId is string
-        && request.resource.data.fileName is string
-        && request.resource.data.fileUrl is string
+      // Read: Any vet across branches, admin, or the pet's verified owner
+      allow read: if isVet() || isAdmin() || isPetOwner(resource.data.petId);
+
+      // Create: Vets or the pet's verified owner (or admin), uploading on behalf of an existing pet
+      allow create: if (isVet() || isPetOwner(request.resource.data.petId) || isAdmin())
+        && petExists(request.resource.data.petId)
+        && request.resource.data.keys().hasAll(['petId', 'fileName', 'fileUrl', 'uploadedBy', 'createdAt'])
         && request.resource.data.uploadedBy == request.auth.uid
         && request.resource.data.createdAt == request.time;
-      allow update, delete: if (isAuthenticated() && resource.data.uploadedBy == request.auth.uid) || isAdmin();
+
+      // Update: Only original uploader or admin (cannot tamper with petId, uploadedBy, or createdAt)
+      allow update: if ((isAuthenticated() && resource.data.uploadedBy == request.auth.uid) || isAdmin())
+        && request.resource.data.petId == resource.data.petId
+        && request.resource.data.uploadedBy == resource.data.uploadedBy
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // Delete: Only the original uploader or an admin can delete
+      allow delete: if (isAuthenticated() && resource.data.uploadedBy == request.auth.uid) || isAdmin();
     }
 
     // ============================================================================
