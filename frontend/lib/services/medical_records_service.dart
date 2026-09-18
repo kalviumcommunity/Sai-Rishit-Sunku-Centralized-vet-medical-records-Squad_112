@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 
 enum MedicalRecordType {
@@ -104,6 +105,69 @@ class MedicalRecordsService {
   static final MedicalRecordsService _instance = MedicalRecordsService._internal();
   factory MedicalRecordsService() => _instance;
   MedicalRecordsService._internal();
+
+  /// Reactive pet list notifier for instant cross-screen state sync
+  final ValueNotifier<List<PetModel>> petsNotifier = ValueNotifier<List<PetModel>>([
+    PetModel(
+      id: 'pet_milo_default',
+      name: 'Milo',
+      species: 'Dog',
+      breed: 'Dachshund',
+      gender: 'male',
+      dateOfBirth: DateTime(DateTime.now().year - 3, DateTime.now().month, DateTime.now().day),
+      microchipId: '98514',
+      ownerId: 'owner_sarah',
+      weightKg: 28.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 365 * 3)),
+    ),
+    PetModel(
+      id: 'pet_lucky_01',
+      name: 'Lucky',
+      species: 'Cat',
+      breed: 'Ginger Tabby',
+      gender: 'female',
+      dateOfBirth: DateTime(DateTime.now().year - 2, DateTime.now().month, DateTime.now().day),
+      microchipId: '20419',
+      ownerId: 'owner_sarah',
+      weightKg: 4.5,
+      createdAt: DateTime.now().subtract(const Duration(days: 365 * 2)),
+    ),
+    PetModel(
+      id: 'pet_sunny_01',
+      name: 'Sunny',
+      species: 'Other',
+      breed: 'Yellow Canary',
+      gender: 'female',
+      dateOfBirth: DateTime(DateTime.now().year - 1, DateTime.now().month, DateTime.now().day),
+      microchipId: '33021',
+      ownerId: 'owner_sarah',
+      weightKg: 0.2,
+      createdAt: DateTime.now().subtract(const Duration(days: 365)),
+    ),
+  ]);
+
+  /// In-memory local cache for treatments & vaccinations to guarantee instant persistence
+  final Map<String, List<UnifiedMedicalRecord>> _localTreatments = {};
+  final Map<String, List<VaccinationModel>> _localVaccinations = {};
+
+  /// Registers a newly created pet: immediately persists to reactive in-memory state
+  /// and saves to Firestore in the background with a 3s timeout.
+  Future<PetModel> registerPet(PetModel pet) async {
+    final current = List<PetModel>.from(petsNotifier.value);
+    current.removeWhere((p) => p.id == pet.id);
+    current.insert(0, pet);
+    petsNotifier.value = current;
+
+    if (Firebase.apps.isNotEmpty) {
+      try {
+        final firestore = FirebaseFirestore.instance;
+        await firestore.collection('pets').doc(pet.id).set(pet.toMap()).timeout(const Duration(seconds: 3));
+      } catch (_) {
+        // Kept in local reactive storage gracefully
+      }
+    }
+    return pet;
+  }
 
   /// Map of known branch names fallback
   static const Map<String, String> branchNameMap = {
@@ -303,19 +367,25 @@ class MedicalRecordsService {
   /// Fetches unified medical records for a pet from Firestore, merging
   /// treatments and vaccinations. Falls back to realistic cross-branch demo records if empty.
   Future<List<UnifiedMedicalRecord>> fetchMedicalHistory(String petId) async {
+    final localList = List<UnifiedMedicalRecord>.from(_localTreatments[petId] ?? []);
+
     if (Firebase.apps.isEmpty) {
-      return getFallbackRecords(petId);
+      if (localList.isEmpty) {
+        return getFallbackRecords(petId);
+      }
+      return [...localList, ...getFallbackRecords(petId)];
     }
 
     try {
       final firestore = FirebaseFirestore.instance;
       final List<UnifiedMedicalRecord> records = [];
 
-      // Fetch Treatments
+      // Fetch Treatments with 2s timeout
       final treatSnapshot = await firestore
           .collection('treatments')
           .where('petId', isEqualTo: petId)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 2));
 
       for (final doc in treatSnapshot.docs) {
         final data = doc.data();
@@ -342,11 +412,12 @@ class MedicalRecordsService {
         );
       }
 
-      // Fetch Vaccinations
+      // Fetch Vaccinations with 2s timeout
       final vacSnapshot = await firestore
           .collection('vaccinations')
           .where('petId', isEqualTo: petId)
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 2));
 
       for (final doc in vacSnapshot.docs) {
         final data = doc.data();
@@ -373,22 +444,40 @@ class MedicalRecordsService {
         );
       }
 
+      // Merge local in-memory treatments
+      for (final local in localList) {
+        if (!records.any((r) => r.id == local.id)) {
+          records.add(local);
+        }
+      }
+
       if (records.isEmpty) {
-        return getFallbackRecords(petId);
+        if (localList.isEmpty) {
+          return getFallbackRecords(petId);
+        }
+        return [...localList, ...getFallbackRecords(petId)];
       }
 
       // Sort descending by date
       records.sort((a, b) => b.date.compareTo(a.date));
       return records;
     } catch (_) {
-      return getFallbackRecords(petId);
+      if (localList.isEmpty) {
+        return getFallbackRecords(petId);
+      }
+      return [...localList, ...getFallbackRecords(petId)];
     }
   }
 
   /// Fetches vaccination records for a pet from Firestore, falling back to demo records if empty.
   Future<List<VaccinationModel>> fetchVaccinations(String petId) async {
+    final localList = List<VaccinationModel>.from(_localVaccinations[petId] ?? []);
+
     if (Firebase.apps.isEmpty) {
-      return getFallbackVaccinations(petId);
+      if (localList.isEmpty) {
+        return getFallbackVaccinations(petId);
+      }
+      return [...localList, ...getFallbackVaccinations(petId)];
     }
 
     try {
@@ -396,11 +485,8 @@ class MedicalRecordsService {
       final vacSnapshot = await firestore
           .collection('vaccinations')
           .where('petId', isEqualTo: petId)
-          .get();
-
-      if (vacSnapshot.docs.isEmpty) {
-        return getFallbackVaccinations(petId);
-      }
+          .get()
+          .timeout(const Duration(seconds: 2));
 
       final List<VaccinationModel> list = [];
       for (final doc in vacSnapshot.docs) {
@@ -419,10 +505,26 @@ class MedicalRecordsService {
         );
       }
 
+      for (final local in localList) {
+        if (!list.any((v) => v.id == local.id)) {
+          list.add(local);
+        }
+      }
+
+      if (list.isEmpty) {
+        if (localList.isEmpty) {
+          return getFallbackVaccinations(petId);
+        }
+        return [...localList, ...getFallbackVaccinations(petId)];
+      }
+
       list.sort((a, b) => b.dateGiven.compareTo(a.dateGiven));
       return list;
     } catch (_) {
-      return getFallbackVaccinations(petId);
+      if (localList.isEmpty) {
+        return getFallbackVaccinations(petId);
+      }
+      return [...localList, ...getFallbackVaccinations(petId)];
     }
   }
 
@@ -457,13 +559,16 @@ class MedicalRecordsService {
       createdAt: now,
     );
 
+    // Save in local in-memory cache immediately
+    _localVaccinations.putIfAbsent(petId, () => []).insert(0, newModel);
+
     if (Firebase.apps.isNotEmpty) {
       try {
         final firestore = FirebaseFirestore.instance;
         final docRef = firestore.collection('vaccinations').doc();
         final data = newModel.copyWith(id: docRef.id).toMap();
         data['createdAt'] = FieldValue.serverTimestamp();
-        await docRef.set(data);
+        await docRef.set(data).timeout(const Duration(seconds: 3));
         return newModel.copyWith(id: docRef.id);
       } catch (e) {
         // Fall back gracefully to in-memory model
@@ -508,13 +613,31 @@ class MedicalRecordsService {
       createdAt: now,
     );
 
+    // Save in local in-memory treatments cache immediately
+    _localTreatments.putIfAbsent(petId, () => []).insert(
+      0,
+      UnifiedMedicalRecord(
+        id: newModel.id,
+        type: MedicalRecordType.treatment,
+        title: newModel.diagnosis.isNotEmpty ? newModel.diagnosis : 'Clinical Consultation',
+        branchId: newModel.branchId,
+        branchName: newModel.branchName ?? effectiveBranchName,
+        vetId: newModel.vetId,
+        vetName: newModel.vetName ?? effectiveVetName,
+        date: newModel.treatmentDate,
+        followUpDate: newModel.followUpDate,
+        rawStatus: newModel.status,
+        notes: newModel.notes,
+      ),
+    );
+
     if (Firebase.apps.isNotEmpty) {
       try {
         final firestore = FirebaseFirestore.instance;
         final docRef = firestore.collection('treatments').doc();
         final data = newModel.copyWith(id: docRef.id).toMap();
         data['createdAt'] = FieldValue.serverTimestamp();
-        await docRef.set(data);
+        await docRef.set(data).timeout(const Duration(seconds: 3));
         return newModel.copyWith(id: docRef.id);
       } catch (e) {
         // Fall back gracefully to in-memory model
@@ -700,16 +823,17 @@ class MedicalRecordsService {
               .collection('pets')
               .where('nameLower', isGreaterThanOrEqualTo: trimmed)
               .where('nameLower', isLessThanOrEqualTo: '$trimmed\uf8ff')
-              .get();
+              .get()
+              .timeout(const Duration(seconds: 2));
 
           if (prefixSnapshot.docs.isNotEmpty) {
             petSnapshot = prefixSnapshot;
           } else {
             // Fall back to all pets so microchip/breed/owner search can also match
-            petSnapshot = await firestore.collection('pets').get();
+            petSnapshot = await firestore.collection('pets').get().timeout(const Duration(seconds: 2));
           }
         } else {
-          petSnapshot = await firestore.collection('pets').get();
+          petSnapshot = await firestore.collection('pets').get().timeout(const Duration(seconds: 2));
         }
 
         if (petSnapshot.docs.isNotEmpty) {
@@ -723,7 +847,11 @@ class MedicalRecordsService {
             String ownerName = 'Registered Owner';
             if (pet.ownerId.isNotEmpty) {
               try {
-                final userDoc = await firestore.collection('users').doc(pet.ownerId).get();
+                final userDoc = await firestore
+                    .collection('users')
+                    .doc(pet.ownerId)
+                    .get()
+                    .timeout(const Duration(seconds: 1));
                 if (userDoc.exists) {
                   ownerName = userDoc.data()?['name'] as String? ?? 'Registered Owner';
                 }
@@ -752,6 +880,26 @@ class MedicalRecordsService {
       allResults = getFallbackPetSearchResults();
     }
 
+    // Include dynamically registered pets from petsNotifier
+    for (final pet in petsNotifier.value) {
+      if (!allResults.any((r) => r.pet.id == pet.id)) {
+        final records = getFallbackRecords(pet.id);
+        final branchCount = calculateDistinctBranches(records);
+        final branchNames = records.map((r) => r.branchName).toSet().toList();
+        allResults.add(
+          VetPetSearchResult(
+            pet: pet,
+            ownerName: 'Registered Owner',
+            distinctBranchCount: branchCount > 0 ? branchCount : 1,
+            branches: branchNames.isNotEmpty ? branchNames : const ['Central Clinic'],
+            lastConsultationDate: pet.createdAt,
+            hasUrgentCare: false,
+            isDueForBooster: false,
+          ),
+        );
+      }
+    }
+
     // Client-side text query search by pet name (including nameLower) or microchip
     final trimmedQuery = query.trim().toLowerCase();
     List<VetPetSearchResult> filtered = allResults;
@@ -768,17 +916,12 @@ class MedicalRecordsService {
 
     // Tab filter: all / recent / my_branch
     final effectiveVetBranch = branchNameMap[vetBranchId] ?? vetBranchId ?? 'Downtown Branch';
-    if (tab == 'recent') {
-      final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    if (tab == 'my_branch') {
+      filtered = filtered.where((item) => item.branches.contains(effectiveVetBranch)).toList();
+    } else if (tab == 'recent') {
+      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
       filtered = filtered.where((item) {
-        final consult = item.lastConsultationDate;
-        return consult != null && consult.isAfter(cutoff);
-      }).toList();
-    } else if (tab == 'my_branch') {
-      filtered = filtered.where((item) {
-        return item.branches.any((b) =>
-            b.toLowerCase().contains(effectiveVetBranch.toLowerCase()) ||
-            b.toLowerCase().contains('downtown'));
+        return item.lastConsultationDate != null && item.lastConsultationDate!.isAfter(thirtyDaysAgo);
       }).toList();
     }
 
@@ -800,7 +943,7 @@ class MedicalRecordsService {
   // DAY 10 — VET TODAY'S FOLLOW-UPS (Cross-Branch Proof, Part 2)
   // =========================================================================
 
-  /// Fallback demo follow-ups pulling from treatments across MULTIPLE branches
+  /// Fallback demo scheduled follow-ups
   List<VetFollowupItem> getFallbackFollowups() {
     final now = DateTime.now();
     return [
@@ -911,7 +1054,7 @@ class MedicalRecordsService {
             .where('followUpDate', isGreaterThanOrEqualTo: Timestamp.fromDate(now.subtract(const Duration(days: 1))))
             .where('followUpDate', isLessThanOrEqualTo: Timestamp.fromDate(weekAhead));
 
-        final snapshot = await query.get();
+        final snapshot = await query.get().timeout(const Duration(seconds: 2));
 
         if (snapshot.docs.isNotEmpty) {
           for (final doc in snapshot.docs) {
@@ -928,7 +1071,11 @@ class MedicalRecordsService {
             String ownerName = 'Pet Owner';
 
             try {
-              final petDoc = await firestore.collection('pets').doc(treatment.petId).get();
+              final petDoc = await firestore
+                  .collection('pets')
+                  .doc(treatment.petId)
+                  .get()
+                  .timeout(const Duration(seconds: 1));
               if (petDoc.exists) {
                 final p = PetModel.fromFirestore(petDoc);
                 petName = p.name;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/pet_model.dart';
+import '../services/medical_records_service.dart';
 import '../utils/constants.dart';
 import 'pet_mascots.dart';
 
@@ -76,9 +78,47 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
     {'id': 'health', 'label': 'Health', 'icon': Icons.medical_services_outlined},
   ];
 
+  List<Map<String, dynamic>> _getCombinedPets(List<PetModel> registeredPets) {
+    final List<Map<String, dynamic>> list = List<Map<String, dynamic>>.from(_pets);
+
+    for (final pet in registeredPets) {
+      final exists = list.any((item) => (item['name'] as String).toLowerCase() == pet.name.toLowerCase());
+      if (!exists) {
+        final ageYears = DateTime.now().year - pet.dateOfBirth.year;
+        final ageText = ageYears <= 0 ? '< 1 Year Old' : '$ageYears Years Old';
+        final sp = pet.species.toLowerCase();
+        final Color col = sp.contains('cat')
+            ? const Color(0xFFFDE68A)
+            : sp.contains('bird')
+                ? const Color(0xFFFEF08A)
+                : const Color(0xFFFED7AA);
+
+        list.add({
+          'name': pet.name,
+          'breed': pet.breed,
+          'age': ageText,
+          'tag': '#${pet.microchipId.replaceAll("CHIP-", "VT-")}',
+          'note': 'Unified Cloud Record \u2022 Central VetCare Network',
+          'time': 'Today, 03:00 PM',
+          'action': 'Health Chart',
+          'avatarColor': col,
+          'species': sp.contains('cat') ? 'cat' : sp.contains('bird') ? 'bird' : 'dog',
+        });
+      }
+    }
+    return list;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final pet = _pets[_selectedPetIndex];
+    return ValueListenableBuilder<List<PetModel>>(
+      valueListenable: MedicalRecordsService().petsNotifier,
+      builder: (context, registeredPets, _) {
+        final combinedPets = _getCombinedPets(registeredPets);
+        if (_selectedPetIndex >= combinedPets.length) {
+          _selectedPetIndex = 0;
+        }
+        final pet = combinedPets[_selectedPetIndex];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
@@ -271,7 +311,7 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
                   Expanded(
                     child: Container(
                       height: 52,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         color: AppColors.lightPill,
                         borderRadius: BorderRadius.circular(26),
@@ -280,14 +320,18 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
                       child: Row(
                         children: [
                           const Icon(Icons.schedule, size: 18, color: AppColors.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            pet['time'] as String,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textPrimary,
-                              letterSpacing: -0.2,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              pet['time'] as String,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                                letterSpacing: -0.2,
+                              ),
                             ),
                           ),
                         ],
@@ -348,74 +392,74 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
               const SizedBox(height: 20),
 
               // 6. Bottom Pet Switcher Bar & Add Pet Button
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Row(
-                    children: List.generate(_pets.length, (index) {
-                      final item = _pets[index];
-                      final isCurrent = _selectedPetIndex == index;
+                  ...List.generate(combinedPets.length, (index) {
+                    final item = combinedPets[index];
+                    final isCurrent = _selectedPetIndex == index;
 
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedPetIndex = index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.only(right: 12),
-                          padding: const EdgeInsets.all(2.5),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isCurrent ? AppColors.primary : Colors.transparent,
-                              width: 2.2,
-                            ),
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedPetIndex = index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isCurrent ? AppColors.primary : Colors.transparent,
+                            width: 2.2,
                           ),
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: item['avatarColor'] as Color,
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: item['avatarColor'] as Color,
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  item['species'] == 'dog'
+                                      ? Icons.pets
+                                      : item['species'] == 'cat'
+                                          ? Icons.pets
+                                          : Icons.cruelty_free,
+                                  size: 20,
+                                  color: AppColors.darkPill,
                                 ),
-                                child: Center(
-                                  child: Icon(
-                                    item['species'] == 'dog'
-                                        ? Icons.pets
-                                        : item['species'] == 'cat'
-                                            ? Icons.pets
-                                            : Icons.cruelty_free,
-                                    size: 20,
-                                    color: AppColors.darkPill,
+                              ),
+                            ),
+                            if (index == 0)
+                              Positioned(
+                                top: -2,
+                                right: -2,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Text(
+                                    '2',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w900,
+                                    ),
                                   ),
                                 ),
                               ),
-                              if (index == 0)
-                                Positioned(
-                                  top: -2,
-                                  right: -2,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Text(
-                                      '2',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
+                          ],
                         ),
-                      );
-                    }),
-                  ),
+                      ),
+                    );
+                  }),
 
                   // "+" Add Pet Button
                   GestureDetector(
@@ -439,6 +483,8 @@ class _AestheticCareCardState extends State<AestheticCareCard> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 

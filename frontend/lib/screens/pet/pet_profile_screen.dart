@@ -103,25 +103,30 @@ class _PetProfileScreenState extends State<PetProfileScreen> {
           createdAt: DateTime(now.year - 3, now.month, now.day),
         );
 
+    // Populate immediately for 0ms initial render
+    _records = _recordsService.getFallbackRecords(_pet.id);
+    _vaccinations = _recordsService.getFallbackVaccinations(_pet.id);
+    _isLoading = false;
+
     _loadData();
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-
     try {
-      final records = await _recordsService.fetchMedicalHistory(_pet.id);
-      final vaccinations = await _recordsService.fetchVaccinations(_pet.id);
+      final results = await Future.wait([
+        _recordsService.fetchMedicalHistory(_pet.id),
+        _recordsService.fetchVaccinations(_pet.id),
+      ]).timeout(const Duration(seconds: 2));
 
       if (mounted) {
         setState(() {
-          _records = records;
-          _vaccinations = vaccinations;
+          _records = results[0] as List<UnifiedMedicalRecord>;
+          _vaccinations = results[1] as List<VaccinationModel>;
           _isLoading = false;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && _records.isEmpty) {
         setState(() {
           _records = _recordsService.getFallbackRecords(_pet.id);
           _vaccinations = _recordsService.getFallbackVaccinations(_pet.id);
@@ -323,14 +328,14 @@ class _PetProfileScreenState extends State<PetProfileScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Three info chips (Age / Weight / Gender)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          // Three info chips (Age / Weight / Gender) — Wrap prevents overflow on narrow screens
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               _buildInfoChip(label: 'Age', value: ageText, icon: Icons.cake_outlined),
-              const SizedBox(width: 8),
               _buildInfoChip(label: 'Weight', value: weightText, icon: Icons.scale_outlined),
-              const SizedBox(width: 8),
               _buildInfoChip(label: 'Gender', value: genderText, icon: Icons.pets_outlined),
             ],
           ),

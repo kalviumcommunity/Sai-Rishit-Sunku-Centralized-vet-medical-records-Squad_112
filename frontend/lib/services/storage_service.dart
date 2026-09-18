@@ -102,8 +102,8 @@ class StorageService {
           },
         );
 
-        final uploadTask = await storageRef.putData(bytes, metadata);
-        downloadUrl = await uploadTask.ref.getDownloadURL();
+        final uploadTask = await storageRef.putData(bytes, metadata).timeout(const Duration(seconds: 4));
+        downloadUrl = await uploadTask.ref.getDownloadURL().timeout(const Duration(seconds: 4));
 
         final firestore = FirebaseFirestore.instance;
         final docRef = firestore.collection('medical_documents').doc();
@@ -118,7 +118,7 @@ class StorageService {
           'createdAt': FieldValue.serverTimestamp(),
         };
 
-        await docRef.set(docData);
+        await docRef.set(docData).timeout(const Duration(seconds: 4));
 
         final model = MedicalDocumentModel(
           id: docRef.id,
@@ -183,7 +183,8 @@ class StorageService {
         final snapshot = await firestore
             .collection('medical_documents')
             .where('petId', isEqualTo: petId)
-            .get();
+            .get()
+            .timeout(const Duration(seconds: 2));
 
         if (snapshot.docs.isNotEmpty) {
           final docs = snapshot.docs.map((d) => MedicalDocumentModel.fromFirestore(d)).toList();
