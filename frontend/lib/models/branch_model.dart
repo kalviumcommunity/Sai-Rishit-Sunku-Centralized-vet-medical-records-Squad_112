@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Represents a veterinary clinic branch location in the centralized network.
+///
+/// [isHub] indicates if the location is a 24/7 central emergency hospital hub
+/// or a satellite clinic branch.
 class BranchModel {
   final String id;
   final String name;
@@ -17,6 +21,17 @@ class BranchModel {
     required this.createdAt,
   });
 
+  /// Helper parser to handle various timestamp formats safely (Timestamp, DateTime, int, or String).
+  static DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  /// Construct a [BranchModel] from a plain map and a document ID.
   factory BranchModel.fromMap(Map<String, dynamic> map, String id) {
     return BranchModel(
       id: id,
@@ -24,14 +39,16 @@ class BranchModel {
       address: map['address'] as String? ?? '',
       phone: map['phone'] as String? ?? '',
       isHub: map['isHub'] as bool? ?? false,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: _parseDateTime(map['createdAt']),
     );
   }
 
+  /// Construct a [BranchModel] directly from a Firestore [DocumentSnapshot].
   factory BranchModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
     return BranchModel.fromMap(doc.data() ?? {}, doc.id);
   }
 
+  /// Convert to Firestore map representation matching schema specification.
   Map<String, dynamic> toMap() {
     return {
       'name': name,
@@ -42,6 +59,7 @@ class BranchModel {
     };
   }
 
+  /// Create a copy with optional overridden fields.
   BranchModel copyWith({
     String? id,
     String? name,
