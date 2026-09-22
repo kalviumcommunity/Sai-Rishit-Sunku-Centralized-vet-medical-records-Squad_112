@@ -95,6 +95,17 @@ async function seed() {
     });
   }
 
+  // 6. Seed Medical Documents
+  if (seedData.medical_documents) {
+    for (const [id, data] of Object.entries(seedData.medical_documents)) {
+      console.log(` -> Seeding medical document: ${id} (${data.fileName})`);
+      await setDoc(doc(db, 'medical_documents', id), {
+        ...data,
+        createdAt: parseTimestamp(data.createdAt),
+      });
+    }
+  }
+
   console.log('✅ Seeding complete! All collections populated with full schema.');
 }
 

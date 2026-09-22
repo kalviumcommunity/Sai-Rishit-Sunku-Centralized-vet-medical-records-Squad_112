@@ -47,6 +47,14 @@
         { "fieldPath": "petId", "order": "ASCENDING" },
         { "fieldPath": "dateGiven", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "medical_documents",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "petId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
