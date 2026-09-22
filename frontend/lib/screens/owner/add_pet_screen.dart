@@ -1,8 +1,7 @@
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -63,7 +62,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
   Future<void> _pickDateOfBirth() async {
     final now = DateTime.now();
-    final initial = _selectedDateOfBirth ?? DateTime(now.year - 2, now.month, now.day);
+    final initial =
+        _selectedDateOfBirth ?? DateTime(now.year - 2, now.month, now.day);
     final picked = await showDatePicker(
       context: context,
       initialDate: initial.isAfter(now) ? now : initial,
@@ -134,7 +134,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       color: AppColors.primaryLight.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
+                    child: const Icon(Icons.photo_library_outlined,
+                        color: AppColors.primary),
                   ),
                   title: const Text(
                     'Upload from Device / Gallery',
@@ -150,9 +151,11 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       );
                       if (file != null) {
                         final bytes = await file.readAsBytes();
+                        final base64String = base64Encode(bytes);
+                        final dataUri = 'data:image/jpeg;base64,$base64String';
                         setState(() {
                           _photoBytes = bytes;
-                          _selectedAvatarUrl = null;
+                          _selectedAvatarUrl = dataUri;
                           _selectedAvatarLabel = file.name;
                         });
                       }
@@ -182,7 +185,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       icon: Icons.pets,
                       label: 'Golden',
                       color: const Color(0xFFFED7AA),
-                      url: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&auto=format&fit=crop&q=80',
+                      url:
+                          'https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&auto=format&fit=crop&q=80',
                       onSelect: (url, label) {
                         Navigator.pop(ctx);
                         setState(() {
@@ -196,7 +200,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       icon: Icons.pets,
                       label: 'Tabby Cat',
                       color: const Color(0xFFFDE68A),
-                      url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&auto=format&fit=crop&q=80',
+                      url:
+                          'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400&auto=format&fit=crop&q=80',
                       onSelect: (url, label) {
                         Navigator.pop(ctx);
                         setState(() {
@@ -210,7 +215,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       icon: Icons.cruelty_free,
                       label: 'Canary',
                       color: const Color(0xFFFEF08A),
-                      url: 'https://images.unsplash.com/photo-1522858547550-340574cd2f33?w=400&auto=format&fit=crop&q=80',
+                      url:
+                          'https://images.unsplash.com/photo-1522858547550-340574cd2f33?w=400&auto=format&fit=crop&q=80',
                       onSelect: (url, label) {
                         Navigator.pop(ctx);
                         setState(() {
@@ -224,7 +230,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                       icon: Icons.cruelty_free_outlined,
                       label: 'Bunny',
                       color: const Color(0xFFE9D5FF),
-                      url: 'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&auto=format&fit=crop&q=80',
+                      url:
+                          'https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&auto=format&fit=crop&q=80',
                       onSelect: (url, label) {
                         Navigator.pop(ctx);
                         setState(() {
@@ -402,12 +409,48 @@ class _AddPetScreenState extends State<AddPetScreen> {
         : 'Select date of birth';
 
     return Scaffold(
-      backgroundColor: AppColors.aestheticBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.aestheticBackground,
+        backgroundColor: AppColors.background,
         elevation: 0,
-        automaticallyImplyLeading: !widget.isEmbeddedInNav,
-        leading: widget.isEmbeddedInNav ? null : const BackButton(),
+        automaticallyImplyLeading: false,
+        leading: widget.isEmbeddedInNav
+            ? IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: AppColors.border.withValues(alpha: 0.4),
+                        width: 1),
+                  ),
+                  child: const Icon(Icons.arrow_back_rounded,
+                      size: 18, color: AppColors.textPrimary),
+                ),
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    final shell = MainNavigationShell.of(context);
+                    if (shell != null) {
+                      shell.setTab(0);
+                    }
+                  }
+                },
+              )
+            : BackButton(
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    final shell = MainNavigationShell.of(context);
+                    if (shell != null) {
+                      shell.setTab(0);
+                    }
+                  }
+                },
+              ),
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -428,11 +471,13 @@ class _AddPetScreenState extends State<AddPetScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 95),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 95),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -449,7 +494,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                             height: 110,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.primaryLight.withValues(alpha: 0.4),
+                              color:
+                                  AppColors.primaryLight.withValues(alpha: 0.4),
                             ),
                             child: _photoBytes != null
                                 ? ClipOval(
@@ -467,7 +513,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                                           width: 110,
                                           height: 110,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (ctx, err, st) => const Icon(
+                                          errorBuilder: (ctx, err, st) =>
+                                              const Icon(
                                             Icons.pets,
                                             size: 40,
                                             color: AppColors.primary,
@@ -476,7 +523,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                                       )
                                     : CustomPaint(
                                         painter: DashedCirclePainter(
-                                          color: AppColors.primary.withValues(alpha: 0.6),
+                                          color: AppColors.primary
+                                              .withValues(alpha: 0.6),
                                           strokeWidth: 1.8,
                                           dashWidth: 6,
                                           dashSpace: 4,
@@ -513,7 +561,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                                 color: AppColors.primary,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                              child: const Icon(Icons.camera_alt,
+                                  color: Colors.white, size: 14),
                             ),
                           ),
                         ],
@@ -539,11 +588,18 @@ class _AddPetScreenState extends State<AddPetScreen> {
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xs),
-                        TextField(
+                        TextFormField(
                           controller: _nameController,
+                          validator: (val) {
+                            if (val == null || val.trim().isEmpty) {
+                              return 'Please enter a name for your pet';
+                            }
+                            return null;
+                          },
                           decoration: const InputDecoration(
                             hintText: 'e.g. Milo, Bella',
-                            prefixIcon: Icon(Icons.pets, color: AppColors.textSecondary),
+                            prefixIcon: Icon(Icons.pets,
+                                color: AppColors.textSecondary),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -583,7 +639,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                           controller: _breedController,
                           decoration: const InputDecoration(
                             hintText: 'e.g. Golden Retriever, Persian, Mixed',
-                            prefixIcon: Icon(Icons.info_outline, color: AppColors.textSecondary),
+                            prefixIcon: Icon(Icons.info_outline,
+                                color: AppColors.textSecondary),
                           ),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -601,11 +658,13 @@ class _AddPetScreenState extends State<AddPetScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildGenderPill('male', 'Male', Icons.male),
+                              child:
+                                  _buildGenderPill('male', 'Male', Icons.male),
                             ),
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
-                              child: _buildGenderPill('female', 'Female', Icons.female),
+                              child: _buildGenderPill(
+                                  'female', 'Female', Icons.female),
                             ),
                           ],
                         ),
@@ -626,8 +685,10 @@ class _AddPetScreenState extends State<AddPetScreen> {
                           borderRadius: BorderRadius.circular(AppRadius.input),
                           child: InputDecorator(
                             decoration: const InputDecoration(
-                              prefixIcon: Icon(Icons.calendar_today_outlined, color: AppColors.textSecondary),
-                              suffixIcon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+                              prefixIcon: Icon(Icons.calendar_today_outlined,
+                                  color: AppColors.textSecondary),
+                              suffixIcon: Icon(Icons.arrow_drop_down,
+                                  color: AppColors.textSecondary),
                             ),
                             child: Text(
                               dobFormatted,
@@ -656,7 +717,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                           controller: _microchipController,
                           decoration: const InputDecoration(
                             hintText: 'Auto-assigned if left blank',
-                            prefixIcon: Icon(Icons.qr_code, color: AppColors.textSecondary),
+                            prefixIcon: Icon(Icons.qr_code,
+                                color: AppColors.textSecondary),
                           ),
                         ),
                       ],
@@ -666,16 +728,19 @@ class _AddPetScreenState extends State<AddPetScreen> {
 
                   // Static Note: "Automatic Multi-Branch Sync — Medical charts accessible across all VetCare clinics."
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md, vertical: 12),
                     decoration: BoxDecoration(
                       color: const Color(0x80FCEFEA),
                       borderRadius: BorderRadius.circular(AppRadius.card),
-                      border: Border.all(color: const Color(0x40D95D39), width: 1),
+                      border:
+                          Border.all(color: const Color(0x40D95D39), width: 1),
                     ),
                     child: const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.hub_outlined, color: AppColors.primary, size: 20),
+                        Icon(Icons.hub_outlined,
+                            color: AppColors.primary, size: 20),
                         SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
@@ -704,7 +769,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2.2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Text(
@@ -750,7 +816,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                 Icon(
                   icon,
                   size: 16,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
                 ),
                 const SizedBox(width: 5),
                 Text(
@@ -758,7 +825,9 @@ class _AddPetScreenState extends State<AddPetScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -801,7 +870,8 @@ class _AddPetScreenState extends State<AddPetScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                  color:
+                      isSelected ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
             ],
@@ -842,7 +912,8 @@ class DashedCirclePainter extends CustomPainter {
     double currentAngle = 0.0;
     for (int i = 0; i < dashCount; i++) {
       canvas.drawArc(
-        Rect.fromCircle(center: Offset(radius, radius), radius: radius - strokeWidth / 2),
+        Rect.fromCircle(
+            center: Offset(radius, radius), radius: radius - strokeWidth / 2),
         currentAngle,
         adjustedDashAngle,
         false,

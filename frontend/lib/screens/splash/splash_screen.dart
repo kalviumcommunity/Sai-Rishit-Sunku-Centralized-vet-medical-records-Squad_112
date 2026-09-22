@@ -70,8 +70,8 @@ class _SplashScreenState extends State<SplashScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppColors.surface,
-                        border: Border.all(color: AppColors.border, width: 1.5),
-                        boxShadow: AppShadows.subtleCard,
+                        border: Border.all(color: AppColors.border.withValues(alpha: 0.4), width: 1),
+                        boxShadow: AppShadows.aestheticCard,
                       ),
                       child: const Center(
                         child: Icon(
@@ -133,7 +133,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(AppRadius.pill),
-                      border: Border.all(color: AppColors.border, width: 1),
+                      border: Border.all(color: AppColors.border.withValues(alpha: 0.4), width: 1),
                       boxShadow: AppShadows.subtleCard,
                     ),
                     child: const Row(
@@ -183,7 +183,7 @@ class _SplashScreenState extends State<SplashScreen> {
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4), width: 1),
       ),
       child: Text(
         label,

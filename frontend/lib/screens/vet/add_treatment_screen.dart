@@ -4,6 +4,7 @@ import '../../models/models.dart';
 import '../../services/auth_service.dart';
 import '../../services/medical_records_service.dart';
 import '../../utils/constants.dart';
+import '../main_navigation_shell.dart';
 
 /// Quick Protocol Preset definition for clinical shortcuts
 class TreatmentProtocolPreset {
@@ -24,11 +25,13 @@ class TreatmentProtocolPreset {
 class AddTreatmentScreen extends StatefulWidget {
   final PetModel? pet;
   final String? petId;
+  final bool isEmbeddedInNav;
 
   const AddTreatmentScreen({
     super.key,
     this.pet,
     this.petId,
+    this.isEmbeddedInNav = false,
   });
 
   @override
@@ -57,38 +60,50 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
     TreatmentProtocolPreset(
       label: 'Ear Flush & Drops',
       diagnosis: 'Otitis Externa (Bilateral Ear Canal Erythema & Exudate)',
-      medication: 'Otomax Otic Ointment 4 drops BID x 10d, Medicated Cleanser flush Q3D',
-      defaultNotes: 'Bilateral canal erythema and dark ceruminous discharge. Gentle flush performed.',
+      medication:
+          'Otomax Otic Ointment 4 drops BID x 10d, Medicated Cleanser flush Q3D',
+      defaultNotes:
+          'Bilateral canal erythema and dark ceruminous discharge. Gentle flush performed.',
     ),
     TreatmentProtocolPreset(
       label: 'Annual Booster',
       diagnosis: 'Preventive Healthcare Examination & Core Immunization',
-      medication: 'DHPP + Rabies Booster (1ml SC), Broad-Spectrum Deworming (1 tab PO)',
-      defaultNotes: 'Physical exam normal. Vitals stable. Vaccines administered right hind limb.',
+      medication:
+          'DHPP + Rabies Booster (1ml SC), Broad-Spectrum Deworming (1 tab PO)',
+      defaultNotes:
+          'Physical exam normal. Vitals stable. Vaccines administered right hind limb.',
     ),
     TreatmentProtocolPreset(
       label: 'Allergy Care',
       diagnosis: 'Canine Atopic Allergic Dermatitis & Secondary Pruritus',
-      medication: 'Apoquel (Oclacitinib) 16mg SID x 14d, Medicated Chlorhexidine Shampoo 2x/wk',
-      defaultNotes: 'Patient exhibits pedal pruritus and ventral erythema. Allergy management initiated.',
+      medication:
+          'Apoquel (Oclacitinib) 16mg SID x 14d, Medicated Chlorhexidine Shampoo 2x/wk',
+      defaultNotes:
+          'Patient exhibits pedal pruritus and ventral erythema. Allergy management initiated.',
     ),
     TreatmentProtocolPreset(
       label: 'Dental Prophy',
       diagnosis: 'Stage II Periodontal Disease & Subgingival Calculus',
-      medication: 'Amoxicillin-Clavulanate 250mg BID x 7d, Chlorhexidine Oral Barrier Gel SID',
-      defaultNotes: 'Ultrasonic scaling, subgingival curettage, and fluoride polish completed under sedation.',
+      medication:
+          'Amoxicillin-Clavulanate 250mg BID x 7d, Chlorhexidine Oral Barrier Gel SID',
+      defaultNotes:
+          'Ultrasonic scaling, subgingival curettage, and fluoride polish completed under sedation.',
     ),
     TreatmentProtocolPreset(
       label: 'Gastroenteritis',
       diagnosis: 'Acute Dietary Indiscretion Gastroenteritis',
-      medication: 'Metronidazole 250mg BID x 5d, Proviable Forte Probiotics 1 capsule SID x 10d',
-      defaultNotes: 'Mild abdominal discomfort on palpation. Hydration adequate. Bland boiled diet advised.',
+      medication:
+          'Metronidazole 250mg BID x 5d, Proviable Forte Probiotics 1 capsule SID x 10d',
+      defaultNotes:
+          'Mild abdominal discomfort on palpation. Hydration adequate. Bland boiled diet advised.',
     ),
     TreatmentProtocolPreset(
       label: 'Post-Surgery Check',
       diagnosis: 'Post-Operative Incision Evaluation & Suture Inspection',
-      medication: 'Carprofen (Rimadyl) 75mg SID x 5d, Cephalexin 500mg BID x 7d',
-      defaultNotes: 'Surgical site dry, intact, and healing well with no signs of infection or seroma.',
+      medication:
+          'Carprofen (Rimadyl) 75mg SID x 5d, Cephalexin 500mg BID x 7d',
+      defaultNotes:
+          'Surgical site dry, intact, and healing well with no signs of infection or seroma.',
     ),
   ];
 
@@ -152,7 +167,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Preset "${preset.label}" applied to diagnosis & dosage.'),
+        content:
+            Text('Preset "${preset.label}" applied to diagnosis & dosage.'),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
@@ -160,7 +176,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
   }
 
   Future<void> _pickFollowUpDate() async {
-    final initialDate = _selectedFollowUpDate ?? DateTime.now().add(const Duration(days: 14));
+    final initialDate =
+        _selectedFollowUpDate ?? DateTime.now().add(const Duration(days: 14));
     final picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
@@ -195,14 +212,15 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
       final userModel = authService.currentUserModel;
 
       // Auto-attach vet's credentials and branch. Never editable directly by the vet.
-      final vetId = userModel?.id ?? authService.currentUser?.uid ?? 'user_dr_sharma';
-      final vetName = userModel?.name.isNotEmpty == true
-          ? userModel!.name
-          : 'Dr. Sharma';
+      final vetId =
+          userModel?.id ?? authService.currentUser?.uid ?? 'user_dr_sharma';
+      final vetName =
+          userModel?.name.isNotEmpty == true ? userModel!.name : 'Dr. Sharma';
       final branchId = userModel?.branchId?.isNotEmpty == true
           ? userModel!.branchId!
           : 'branch_koramangala';
-      final branchName = MedicalRecordsService.branchNameMap[branchId] ?? 'VetCare Central - Koramangala';
+      final branchName = MedicalRecordsService.branchNameMap[branchId] ??
+          'VetCare Central - Koramangala';
 
       await _medicalService.addTreatment(
         petId: _activePet.id,
@@ -225,7 +243,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
           behavior: SnackBarBehavior.floating,
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const Icon(Icons.check_circle_rounded,
+                  color: Colors.white, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -238,7 +257,17 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
         ),
       );
 
-      Navigator.of(context).pop(true);
+      if (widget.isEmbeddedInNav) {
+        _diagnosisController.clear();
+        _medicationController.clear();
+        _notesController.clear();
+        setState(() {
+          _isSaving = false;
+          _selectedPresetLabel = null;
+        });
+      } else {
+        Navigator.of(context).pop(true);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -254,13 +283,24 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        automaticallyImplyLeading: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1F2937), size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF1F2937), size: 20),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            } else {
+              final shell = MainNavigationShell.of(context);
+              if (shell != null) {
+                shell.setTab(0);
+              }
+            }
+          },
         ),
         title: const Text(
           'Log Clinical Treatment',
@@ -276,9 +316,13 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Form(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 620),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                  16, 20, 16, widget.isEmbeddedInNav ? 110 : 20),
+              child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +334,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
                 // 2. Quick Protocol Presets Header & Horizontal Chips Row
                 Row(
                   children: [
-                    const Icon(Icons.bolt_rounded, size: 18, color: Color(0xFFF97316)),
+                    const Icon(Icons.bolt_rounded,
+                        size: 18, color: Color(0xFFF97316)),
                     const SizedBox(width: 6),
                     const Text(
                       'Quick Protocol Presets',
@@ -359,7 +404,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
                   maxLines: 3,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: _buildInputDecoration(
-                    hintText: 'Add clinical notes, patient vitals, cytology findings, or care instructions...',
+                    hintText:
+                        'Add clinical notes, patient vitals, cytology findings, or care instructions...',
                     prefixIcon: Icons.notes_rounded,
                   ),
                 ),
@@ -395,7 +441,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2.5,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Row(
@@ -420,8 +467,10 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   /// 1. Pet Quick-Info Card
   Widget _buildPetQuickInfoCard() {
@@ -433,7 +482,7 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -477,7 +526,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
                     const SizedBox(width: 8),
                     // "Checked In" status pill
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFFECFDF5),
                         borderRadius: BorderRadius.circular(20),
@@ -542,14 +592,18 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
               labelStyle: TextStyle(
                 fontSize: 12.5,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? const Color(0xFFC2410C) : const Color(0xFF374151),
+                color: isSelected
+                    ? const Color(0xFFC2410C)
+                    : const Color(0xFF374151),
               ),
               backgroundColor: Colors.white,
               selectedColor: const Color(0xFFFFEDD5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: isSelected ? const Color(0xFFF97316) : const Color(0xFFE5E7EB),
+                  color: isSelected
+                      ? const Color(0xFFF97316)
+                      : const Color(0xFFE5E7EB),
                 ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -605,7 +659,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
         if (isRequired)
           const Text(
             ' *',
-            style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: Color(0xFFEF4444), fontWeight: FontWeight.bold),
           ),
       ],
     );
@@ -630,7 +685,8 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today_rounded, size: 18, color: Color(0xFF9CA3AF)),
+            const Icon(Icons.calendar_today_rounded,
+                size: 18, color: Color(0xFF9CA3AF)),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -638,11 +694,14 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: date != null ? const Color(0xFF111827) : Colors.grey.shade400,
+                  color: date != null
+                      ? const Color(0xFF111827)
+                      : Colors.grey.shade400,
                 ),
               ),
             ),
-            const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
+            const Icon(Icons.keyboard_arrow_down_rounded,
+                color: Color(0xFF6B7280)),
           ],
         ),
       ),
@@ -661,7 +720,7 @@ class _AddTreatmentScreenState extends State<AddTreatmentScreen> {
       child: const Row(
         children: [
           Icon(Icons.cloud_sync_rounded, color: Color(0xFF0284C7), size: 20),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Text(
               'Changes sync automatically to all VetCare clinics.',

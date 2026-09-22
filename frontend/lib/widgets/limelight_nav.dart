@@ -16,8 +16,8 @@ class LimelightItem {
   });
 }
 
-/// An adaptive-width navigation bar with a "limelight" spotlight effect that highlights the active item.
-/// Replicates the React/Tailwind [LimelightNav] component in Flutter.
+/// Premium floating navigation bar with a subtle spotlight indicator.
+/// Frosted glass surface with a sliding pill highlight.
 class LimelightNavBar extends StatelessWidget {
   final List<LimelightItem> items;
   final int activeIndex;
@@ -36,150 +36,125 @@ class LimelightNavBar extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final totalWidth = constraints.maxWidth > 460 ? 440.0 : constraints.maxWidth - 32;
+        final totalWidth = constraints.maxWidth > 460 ? 420.0 : constraints.maxWidth - 40;
         final itemWidth = totalWidth / items.length;
-        final activeCenter = (activeIndex * itemWidth) + (itemWidth / 2);
 
         return Center(
           child: Material(
             color: Colors.transparent,
             child: Container(
               width: totalWidth,
-              height: 64,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.card),
-              border: Border.all(color: AppColors.border, width: 1.2),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x18000000),
-                  blurRadius: 20,
-                  offset: Offset(0, 8),
-                  spreadRadius: 0,
+              height: 68,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.5),
+                  width: 1,
                 ),
-              ],
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // Animated Limelight Spotlight Beam & Top Bar
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  left: activeCenter - 26,
-                  top: 0,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Top pill indicator
-                      Container(
-                        width: 52,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.8),
-                              blurRadius: 8,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Spotlight Beam (Trapezoid Gradient Cone)
-                      CustomPaint(
-                        size: const Size(64, 52),
-                        painter: _SpotlightBeamPainter(
-                          color: AppColors.primary.withValues(alpha: 0.22),
-                        ),
-                      ),
-                    ],
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x10000000),
+                    blurRadius: 32,
+                    offset: Offset(0, 12),
+                    spreadRadius: 0,
                   ),
-                ),
+                  BoxShadow(
+                    color: Color(0x06000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                    spreadRadius: 0,
+                  ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Animated pill indicator behind active item
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    left: activeIndex * itemWidth + 6,
+                    top: 6,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 280),
+                      curve: Curves.easeOutCubic,
+                      width: itemWidth - 12,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
 
-                // Navigation Items Row
-                Row(
-                  children: List.generate(items.length, (index) {
-                    final item = items[index];
-                    final isActive = activeIndex == index;
+                  // Top accent line for active tab
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 280),
+                    curve: Curves.easeOutCubic,
+                    left: activeIndex * itemWidth + (itemWidth / 2) - 14,
+                    top: 0,
+                    child: Container(
+                      width: 28,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
 
-                    return Expanded(
-                      child: InkWell(
-                        onTap: () {
-                          onTabChange?.call(index);
-                          item.onClick?.call();
-                        },
-                        borderRadius: BorderRadius.circular(AppRadius.card),
-                        child: Center(
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 150),
-                            opacity: isActive ? 1.0 : 0.4,
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  item.icon,
-                                  size: 22,
-                                  color: isActive ? AppColors.primary : AppColors.textSecondary,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  item.label,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                                    color: isActive ? AppColors.primary : AppColors.textSecondary,
+                  // Navigation Items Row
+                  Row(
+                    children: List.generate(items.length, (index) {
+                      final item = items[index];
+                      final isActive = activeIndex == index;
+
+                      return Expanded(
+                        child: InkWell(
+                          onTap: () {
+                            onTabChange?.call(index);
+                            item.onClick?.call();
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          child: Center(
+                            child: AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 200),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                                color: isActive ? AppColors.primary : AppColors.textMuted,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  AnimatedScale(
+                                    scale: isActive ? 1.0 : 0.92,
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Icon(
+                                      item.icon,
+                                      size: 22,
+                                      color: isActive ? AppColors.primary : AppColors.textMuted,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 4),
+                                  Text(item.label),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  }),
-                ),
-              ],
+                      );
+                    }),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      );
+        );
       },
     );
   }
-}
-
-/// Custom painter for the Limelight spotlight beam cone
-class _SpotlightBeamPainter extends CustomPainter {
-  final Color color;
-
-  _SpotlightBeamPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = Path();
-    // Polygon cone: (top: 25% to 75%, bottom: 5% to 95%)
-    path.moveTo(size.width * 0.30, 0);
-    path.lineTo(size.width * 0.70, 0);
-    path.lineTo(size.width * 0.95, size.height);
-    path.lineTo(size.width * 0.05, size.height);
-    path.close();
-
-    final paint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          color,
-          color.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

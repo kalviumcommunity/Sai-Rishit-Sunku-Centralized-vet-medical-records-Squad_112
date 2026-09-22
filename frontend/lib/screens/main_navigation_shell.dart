@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../services/auth_service.dart';
 import '../widgets/limelight_nav.dart';
+import 'admin/admin_screen.dart';
 import 'owner/add_pet_screen.dart';
 import 'owner/owner_home_screen.dart';
 import 'owner/profile_screen.dart';
 import 'pet/pet_profile_screen.dart';
+import 'vet/add_treatment_screen.dart';
+import 'vet/vet_followups_screen.dart';
 import 'vet/vet_search_screen.dart';
 
 /// Unified Application Shell with Persistent Limelight Bottom Navigation
-/// Present on all authenticated screens (Home, Records, Add Pet, Clinics, Profile).
-/// Excluded entirely on Login, Signup, and Splash screens.
+/// Present on all authenticated screens. Adapts dynamically based on active user role:
+/// - Pet Owner: Home, Records, Add Pet, Clinics, Profile
+/// - Veterinarian: Patients (Registry), Follow-ups (Worklist), Record Care (Treatment), Admin Hub, Profile
+/// - Administrator: Admin Hub (Overview), Patients, Worklist, Pet Portal, Profile
 class MainNavigationShell extends StatefulWidget {
   final int initialIndex;
 
@@ -48,14 +55,14 @@ class MainNavigationShellState extends State<MainNavigationShell> {
 
   /// Switch the active tab programmatically
   void setTab(int index) {
-    if (index >= 0 && index < _navItems.length) {
+    if (index >= 0) {
       setState(() {
         _currentIndex = index;
       });
     }
   }
 
-  final List<LimelightItem> _navItems = const [
+  static const List<LimelightItem> _ownerNavItems = [
     LimelightItem(id: 'home', icon: Icons.home_outlined, label: 'Home'),
     LimelightItem(id: 'records', icon: Icons.description_outlined, label: 'Records'),
     LimelightItem(id: 'add', icon: Icons.add_circle_outline, label: 'Add Pet'),
@@ -63,42 +70,89 @@ class MainNavigationShellState extends State<MainNavigationShell> {
     LimelightItem(id: 'profile', icon: Icons.person_outline, label: 'Profile'),
   ];
 
+  static const List<LimelightItem> _vetNavItems = [
+    LimelightItem(id: 'patients', icon: Icons.search, label: 'Patients'),
+    LimelightItem(id: 'followups', icon: Icons.assignment_outlined, label: 'Follow-ups'),
+    LimelightItem(id: 'record', icon: Icons.add_circle_outline, label: 'Record Care'),
+    LimelightItem(id: 'admin', icon: Icons.admin_panel_settings_outlined, label: 'Admin Hub'),
+    LimelightItem(id: 'profile', icon: Icons.person_outline, label: 'Profile'),
+  ];
+
+  static const List<LimelightItem> _adminNavItems = [
+    LimelightItem(id: 'admin', icon: Icons.admin_panel_settings_outlined, label: 'Admin Hub'),
+    LimelightItem(id: 'patients', icon: Icons.search, label: 'Patients'),
+    LimelightItem(id: 'worklist', icon: Icons.assignment_outlined, label: 'Worklist'),
+    LimelightItem(id: 'owner', icon: Icons.pets_outlined, label: 'Pet Portal'),
+    LimelightItem(id: 'profile', icon: Icons.person_outline, label: 'Profile'),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    // List of tab views matching the navigation bar
-    final tabScreens = [
-      const OwnerHomeScreen(),
-      const PetProfileScreen(),
-      const AddPetScreen(isEmbeddedInNav: true),
-      const VetSearchScreen(),
-      const ProfileScreen(),
-    ];
+    final authService = context.watch<AuthService>();
+    final role = authService.userRole.toLowerCase();
 
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: IndexedStack(
-            index: _currentIndex,
-            children: tabScreens,
-          ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 12,
-          child: SafeArea(
-            child: LimelightNavBar(
-              activeIndex: _currentIndex,
-              onTabChange: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              items: _navItems,
+    final List<LimelightItem> navItems;
+    final List<Widget> tabScreens;
+
+    if (role == 'vet' || role == 'admin') {
+      navItems = _vetNavItems;
+      tabScreens = const [
+        VetSearchScreen(),
+        VetFollowupsScreen(),
+        AddTreatmentScreen(isEmbeddedInNav: true),
+        AdminScreen(),
+        ProfileScreen(),
+      ];
+    } else {
+      navItems = _ownerNavItems;
+      tabScreens = const [
+        OwnerHomeScreen(),
+        PetProfileScreen(),
+        AddPetScreen(isEmbeddedInNav: true),
+        VetSearchScreen(),
+        ProfileScreen(),
+      ];
+    }
+
+    if (_currentIndex >= tabScreens.length) {
+      _currentIndex = 0;
+    }
+
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop && _currentIndex != 0) {
+          setState(() {
+            _currentIndex = 0;
+          });
+        }
+      },
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: tabScreens,
             ),
           ),
-        ),
-      ],
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 12,
+            child: SafeArea(
+              child: LimelightNavBar(
+                activeIndex: _currentIndex,
+                onTabChange: (index) {
+                  setState(() {
+                    _currentIndex = index;
+                  });
+                },
+                items: navItems,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

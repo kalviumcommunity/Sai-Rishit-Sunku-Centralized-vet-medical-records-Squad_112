@@ -27,6 +27,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -46,30 +47,14 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final branchId = _branchController.text.trim();
-
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill out all required fields.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters.'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
 
     setState(() => _isLoading = true);
     try {
@@ -79,7 +64,9 @@ class _SignupScreenState extends State<SignupScreen> {
         email: email,
         password: password,
         role: _selectedRole,
-        branchId: _selectedRole == 'vet' && branchId.isNotEmpty ? branchId : null,
+        branchId: _selectedRole == 'vet'
+            ? (branchId.isNotEmpty ? branchId : 'branch_koramangala')
+            : null,
       ).timeout(
         const Duration(seconds: 15),
         onTimeout: () => throw TimeoutException('Registration timed out. Please check your connection.'),
@@ -130,17 +117,87 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignUp() async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = context.read<AuthService>();
+      final branchId = _branchController.text.trim();
+      final assignedBranch = _selectedRole == 'vet'
+          ? (branchId.isNotEmpty ? branchId : 'branch_koramangala')
+          : null;
+
+      await authService
+          .signInWithGoogle(
+            role: _selectedRole,
+            branchId: assignedBranch,
+          )
+          .timeout(
+            const Duration(seconds: 45),
+            onTimeout: () => throw TimeoutException(
+                'Google Sign-Up timed out. Please try again.'),
+          );
+
+      if (!mounted) return;
+
+      if (!authService.isAuthenticated) {
+        return;
+      }
+
+      final nextRoute =
+          await authService.determineInitialRoute(waitDuration: Duration.zero);
+      if (!mounted) return;
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        nextRoute,
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String message = e.message ?? 'Google Sign-Up failed.';
+      if (e.code == 'popup-closed-by-user') {
+        message = 'Google sign-up was cancelled.';
+      } else if (e.code == 'network-request-failed') {
+        message = 'Network error. Please check your internet connection.';
+      } else if (e.code == 'account-exists-with-different-credential') {
+        message =
+            'An account already exists with the same email using a different sign-in method.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-Up notice: $e'),
+          backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.aestheticBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'Sign Up',
           style: TextStyle(
             color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            fontSize: 22,
+            letterSpacing: -0.5,
           ),
         ),
         backgroundColor: Colors.transparent,
@@ -203,139 +260,116 @@ class _SignupScreenState extends State<SignupScreen> {
                     padding: const EdgeInsets.all(AppSpacing.lg),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.heroCard),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppColors.border.withValues(alpha: 0.3), width: 1),
                       boxShadow: AppShadows.aestheticCard,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Role Selector Header
-                        Text(
-                          'Account Type',
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-
-                        // Role Selector with Two Chips ("Pet Owner" / "Veterinarian")
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ChoiceChip(
-                                showCheckmark: false,
-                                avatar: Icon(
-                                  Icons.pets,
-                                  size: 16,
-                                  color: _selectedRole == 'owner'
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
+                    child: Form(
+                      key: _formKey,
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Role Selector Header
+                          Text(
+                            'Account Type',
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
                                 ),
-                                label: const Center(
-                                  child: Text('Pet Owner'),
-                                ),
-                                selected: _selectedRole == 'owner',
-                                selectedColor: AppColors.darkPill,
-                                backgroundColor: AppColors.lightPill,
-                                labelStyle: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: _selectedRole == 'owner'
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
-                                ),
-                                side: BorderSide.none,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                                ),
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() => _selectedRole = 'owner');
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: ChoiceChip(
-                                showCheckmark: false,
-                                avatar: Icon(
-                                  Icons.medical_services_outlined,
-                                  size: 16,
-                                  color: _selectedRole == 'vet'
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
-                                ),
-                                label: const Center(
-                                  child: Text('Veterinarian'),
-                                ),
-                                selected: _selectedRole == 'vet',
-                                selectedColor: AppColors.darkPill,
-                                backgroundColor: AppColors.lightPill,
-                                labelStyle: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: _selectedRole == 'vet'
-                                      ? Colors.white
-                                      : AppColors.textSecondary,
-                                ),
-                                side: BorderSide.none,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                                ),
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() => _selectedRole = 'vet');
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-
-                        // Full Name Field
-                        TextField(
-                          controller: _nameController,
-                          decoration: InputDecoration(
-                            labelText: 'Full Name',
-                            hintText: 'e.g. Sarah Jenkins',
-                            prefixIcon: const Icon(Icons.person_outline, color: AppColors.textSecondary),
-                            filled: true,
-                            fillColor: AppColors.lightPill,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.sm),
 
-                        // Email Field
-                        TextField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: InputDecoration(
-                            labelText: 'Email Address',
-                            hintText: 'name@example.com',
-                            prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
-                            filled: true,
-                            fillColor: AppColors.lightPill,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
+                          // Role Selector with Two Chips ("Pet Owner" / "Veterinarian")
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ChoiceChip(
+                                  showCheckmark: false,
+                                  avatar: Icon(
+                                    Icons.pets,
+                                    size: 16,
+                                    color: _selectedRole == 'owner'
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                  ),
+                                  label: const Center(
+                                    child: Text('Pet Owner'),
+                                  ),
+                                  selected: _selectedRole == 'owner',
+                                  selectedColor: AppColors.darkPill,
+                                  backgroundColor: AppColors.lightPill,
+                                  labelStyle: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: _selectedRole == 'owner'
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                  ),
+                                  side: BorderSide.none,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setState(() => _selectedRole = 'owner');
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: ChoiceChip(
+                                  showCheckmark: false,
+                                  avatar: Icon(
+                                    Icons.medical_services_outlined,
+                                    size: 16,
+                                    color: _selectedRole == 'vet'
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                  ),
+                                  label: const Center(
+                                    child: Text('Veterinarian'),
+                                  ),
+                                  selected: _selectedRole == 'vet',
+                                  selectedColor: AppColors.darkPill,
+                                  backgroundColor: AppColors.lightPill,
+                                  labelStyle: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: _selectedRole == 'vet'
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                  ),
+                                  side: BorderSide.none,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                  onSelected: (selected) {
+                                    if (selected) {
+                                      setState(() => _selectedRole = 'vet');
+                                    }
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-
-                        // Optional Clinic Branch ID for Veterinarians
-                        if (_selectedRole == 'vet') ...[
                           const SizedBox(height: AppSpacing.md),
-                          TextField(
-                            controller: _branchController,
+
+                          // Full Name Field with inline validation
+                          TextFormField(
+                            controller: _nameController,
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Please enter your full name';
+                              }
+                              if (val.trim().length < 2) {
+                                return 'Name must be at least 2 characters';
+                              }
+                              return null;
+                            },
                             decoration: InputDecoration(
-                              labelText: 'Clinic Branch ID (Optional)',
-                              hintText: 'e.g. branch_central_01',
-                              prefixIcon: const Icon(Icons.apartment, color: AppColors.textSecondary),
+                              labelText: 'Full Name',
+                              hintText: 'e.g. Sarah Jenkins',
+                              prefixIcon: const Icon(Icons.person_outline, color: AppColors.textSecondary),
                               filled: true,
                               fillColor: AppColors.lightPill,
                               border: OutlineInputBorder(
@@ -344,36 +378,100 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                             ),
                           ),
-                        ],
-                        const SizedBox(height: AppSpacing.md),
+                          const SizedBox(height: AppSpacing.md),
 
-                        // Password Field with Visibility Toggle
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: InputDecoration(
-                            labelText: 'Password (min 6 chars)',
-                            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
-                            filled: true,
-                            fillColor: AppColors.lightPill,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                color: AppColors.textSecondary,
-                                size: 20,
+                          // Email Field with inline validation
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Please enter your email address';
+                              }
+                              final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                              if (!emailRegex.hasMatch(val.trim())) {
+                                return 'Please enter a valid email address';
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Email Address',
+                              hintText: 'name@example.com',
+                              prefixIcon: const Icon(Icons.email_outlined, color: AppColors.textSecondary),
+                              filled: true,
+                              fillColor: AppColors.lightPill,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
                               ),
-                              onPressed: () {
-                                setState(() {
-                                  _obscurePassword = !_obscurePassword;
-                                });
-                              },
                             ),
                           ),
-                        ),
+
+                          // Optional Clinic Branch ID for Veterinarians
+                          if (_selectedRole == 'vet') ...[
+                            const SizedBox(height: AppSpacing.md),
+                            TextFormField(
+                              controller: _branchController,
+                              validator: (val) {
+                                // Truly optional: if left blank, assigned to primary branch hub automatically
+                                if (val != null && val.trim().isNotEmpty && val.trim().length < 3) {
+                                  return 'Branch ID must be at least 3 characters if provided';
+                                }
+                                return null;
+                              },
+                              decoration: InputDecoration(
+                                labelText: 'Clinic Branch ID (Optional)',
+                                hintText: 'e.g. branch_koramangala',
+                                helperText: 'Leave empty for default clinic branch (Koramangala Hub)',
+                                helperMaxLines: 2,
+                                prefixIcon: const Icon(Icons.apartment, color: AppColors.textSecondary),
+                                filled: true,
+                                fillColor: AppColors.lightPill,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: AppSpacing.md),
+
+                          // Password Field with Visibility Toggle and inline validation
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: _obscurePassword,
+                            validator: (val) {
+                              if (val == null || val.trim().isEmpty) {
+                                return 'Please enter a password';
+                              }
+                              if (val.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'Password (min 6 chars)',
+                              prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+                              filled: true,
+                              fillColor: AppColors.lightPill,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                                onPressed: () {
+                                  setState(() {
+                                    _obscurePassword = !_obscurePassword;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: AppSpacing.md),
 
                         // Static Info Card: "Multi-Clinic Unified Sync"
@@ -433,10 +531,11 @@ class _SignupScreenState extends State<SignupScreen> {
                           const Center(
                             child: Padding(
                               padding: EdgeInsets.symmetric(vertical: 14),
-                              child: CircularProgressIndicator(color: AppColors.primary),
+                              child: CircularProgressIndicator(
+                                  color: AppColors.primary),
                             ),
                           )
-                        else
+                        else ...[
                           // Full-Width "SIGN UP" Button
                           SizedBox(
                             width: double.infinity,
@@ -447,13 +546,16 @@ class _SignupScreenState extends State<SignupScreen> {
                                 backgroundColor: AppColors.darkPill,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.only(left: 24, right: 8),
+                                padding:
+                                    const EdgeInsets.only(left: 24, right: 8),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.pill),
                                 ),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'SIGN UP',
@@ -467,20 +569,103 @@ class _SignupScreenState extends State<SignupScreen> {
                                     width: 38,
                                     height: 38,
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.18),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.18),
                                       shape: BoxShape.circle,
                                     ),
                                     child: const Center(
-                                      child: Icon(Icons.arrow_forward, size: 17, color: Colors.white),
+                                      child: Icon(Icons.arrow_forward,
+                                          size: 17, color: Colors.white),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
+                          const SizedBox(height: AppSpacing.md),
+
+                          // Divider reading "or continue with"
+                          const Row(
+                            children: [
+                              Expanded(
+                                  child: Divider(color: Color(0xFFE5E7EB))),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md),
+                                child: Text(
+                                  'or continue with',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                  child: Divider(color: Color(0xFFE5E7EB))),
+                            ],
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+
+                            // Full-width outline button with Google "G" icon and "Continue with Google"
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: OutlinedButton(
+                                onPressed: _handleGoogleSignUp,
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  side: const BorderSide(
+                                      color: Color(0xFFE5E7EB), width: 1.2),
+                                  foregroundColor: AppColors.textPrimary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.pill),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 24,
+                                      height: 24,
+                                      alignment: Alignment.center,
+                                      decoration: const BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.surfaceVariant,
+                                      ),
+                                      child: const Text(
+                                        'G',
+                                        style: TextStyle(
+                                          color: Color(0xFF4285F4),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 15,
+                                          fontFamily: 'sans-serif',
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: AppSpacing.sm),
+                                    const Flexible(
+                                      child: Text(
+                                        'Continue with Google',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                          fontSize: 15,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
                       ],
                     ),
                   ),
+                ),
 
                   const SizedBox(height: AppSpacing.lg),
 

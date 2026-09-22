@@ -76,6 +76,35 @@ void main() {
       // Branch ID field hidden again
       expect(find.text('Clinic Branch ID (Optional)'), findsNothing);
     });
+
+    testWidgets('Veterinarian can submit without Clinic Branch ID since it is optional', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: ChangeNotifierProvider<AuthService>(
+            create: (_) => AuthService(),
+            child: const SignupScreen(),
+          ),
+        ),
+      );
+
+      // Select Veterinarian Chip
+      await tester.tap(find.text('Veterinarian'));
+      await tester.pump();
+
+      // Enter Name, Email, Password, but leave Clinic Branch ID empty
+      await tester.enterText(find.widgetWithText(TextField, 'Full Name'), 'Dr. John Doe');
+      await tester.enterText(find.widgetWithText(TextField, 'Email Address'), 'drjohn@vetcare.com');
+      await tester.enterText(find.widgetWithText(TextField, 'Password (min 6 chars)'), 'password123');
+
+      final signupBtn = find.widgetWithText(ElevatedButton, 'SIGN UP');
+      await tester.ensureVisible(signupBtn);
+      await tester.tap(signupBtn);
+      await tester.pump();
+
+      // Verify no "Please specify your primary clinic branch ID" error is shown
+      expect(find.text('Please specify your primary clinic branch ID'), findsNothing);
+    });
   });
 
   group('DAY 4 — Auth Persistence & Profile Screen Tests', () {
@@ -117,6 +146,11 @@ void main() {
       expect(find.text('Email'), findsOneWidget);
       expect(find.text('Multi-Clinic Sync'), findsOneWidget);
       expect(find.widgetWithText(ElevatedButton, 'Log Out'), findsOneWidget);
+
+      final deleteBtn = find.text('Delete Account');
+      await tester.ensureVisible(deleteBtn);
+      expect(deleteBtn, findsOneWidget);
+      expect(find.text('Danger Zone'), findsOneWidget);
     });
 
     testWidgets('OwnerHomeScreen includes working profile and logout actions', (WidgetTester tester) async {

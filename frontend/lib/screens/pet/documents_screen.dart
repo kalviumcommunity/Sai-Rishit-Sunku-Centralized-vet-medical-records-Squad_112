@@ -5,6 +5,8 @@ import '../../models/models.dart';
 import '../../services/auth_service.dart';
 import '../../services/medical_records_service.dart';
 import '../../services/storage_service.dart';
+import '../../utils/constants.dart';
+import '../main_navigation_shell.dart';
 
 /// DAY 12 — Documents Screen with Firebase Storage Integration
 class DocumentsScreen extends StatefulWidget {
@@ -99,7 +101,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       final branchId = userModel?.branchId?.isNotEmpty == true
           ? userModel!.branchId!
           : 'branch_koramangala';
-      final uploadedBy = userModel?.id ?? authService.currentUser?.uid ?? 'user_dr_sharma';
+      final uploadedBy =
+          userModel?.id ?? authService.currentUser?.uid ?? 'user_dr_sharma';
 
       final newDoc = await _storageService.uploadDocument(
         petId: _activePet.id,
@@ -122,7 +125,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           behavior: SnackBarBehavior.floating,
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const Icon(Icons.check_circle_rounded,
+                  color: Colors.white, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -168,13 +172,20 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1F2937), size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF1F2937), size: 20),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              MainNavigationShell.of(context)?.setTab(1);
+            }
+          },
         ),
         title: Row(
           children: [
@@ -283,7 +294,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF7ED).withOpacity(0.5),
+            color: const Color(0xFFFFF7ED).withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Column(
@@ -296,7 +307,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       height: 32,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
                       ),
                     ),
                     SizedBox(height: 12),
@@ -353,7 +365,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     ),
                     const SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF97316),
                         borderRadius: BorderRadius.circular(20),
@@ -387,7 +400,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.verified_user_outlined, color: Color(0xFF16A34A), size: 18),
+          const Icon(Icons.verified_user_outlined,
+              color: Color(0xFF16A34A), size: 18),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -406,8 +420,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
   /// 3. Document Item Card
   Widget _buildDocumentCard(MedicalDocumentModel doc) {
-    final branchName = MedicalRecordsService.branchNameMap[doc.branchId] ?? 'VetCare Clinic';
-    final dateStr = '${doc.createdAt.day.toString().padLeft(2, '0')}/${doc.createdAt.month.toString().padLeft(2, '0')}/${doc.createdAt.year}';
+    final branchName =
+        MedicalRecordsService.branchNameMap[doc.branchId] ?? 'VetCare Clinic';
+    final dateStr =
+        '${doc.createdAt.day.toString().padLeft(2, '0')}/${doc.createdAt.month.toString().padLeft(2, '0')}/${doc.createdAt.year}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -418,7 +434,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.015),
+            color: Colors.black.withValues(alpha: 0.015),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -431,16 +447,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: doc.isPdf
-                  ? const Color(0xFFFEF2F2)
-                  : const Color(0xFFEFF6FF),
+              color:
+                  doc.isPdf ? const Color(0xFFFEF2F2) : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              doc.isPdf
-                  ? Icons.picture_as_pdf_rounded
-                  : Icons.image_rounded,
-              color: doc.isPdf ? const Color(0xFFDC2626) : const Color(0xFF2563EB),
+              doc.isPdf ? Icons.picture_as_pdf_rounded : Icons.image_rounded,
+              color:
+                  doc.isPdf ? const Color(0xFFDC2626) : const Color(0xFF2563EB),
               size: 22,
             ),
           ),
@@ -479,12 +493,14 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
-                icon: const Icon(Icons.visibility_outlined, size: 20, color: Color(0xFF4B5563)),
+                icon: const Icon(Icons.visibility_outlined,
+                    size: 20, color: Color(0xFF4B5563)),
                 tooltip: 'View Document',
                 onPressed: () => _openDocumentUrl(doc.fileUrl),
               ),
               IconButton(
-                icon: const Icon(Icons.download_rounded, size: 20, color: Color(0xFFF97316)),
+                icon: const Icon(Icons.download_rounded,
+                    size: 20, color: Color(0xFFF97316)),
                 tooltip: 'Download File',
                 onPressed: () => _openDocumentUrl(doc.fileUrl),
               ),
@@ -501,7 +517,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       alignment: Alignment.center,
       child: Column(
         children: [
-          Icon(Icons.folder_open_rounded, size: 48, color: Colors.grey.shade300),
+          Icon(Icons.folder_open_rounded,
+              size: 48, color: Colors.grey.shade300),
           const SizedBox(height: 12),
           Text(
             'No documents uploaded yet',

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../utils/constants.dart';
 
-/// Reusable Elevated Card matching VetCare's design tokens:
-/// - Pure white surface
-/// - Generous corner radius (16px)
-/// - Subtle drop-shadow
+/// Reusable Premium Card with ambient shadow and hairline border.
+/// Uses double-bezel architecture: subtle outer border with
+/// inner white surface for perceived depth.
 class CustomCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -32,7 +31,10 @@ class CustomCard extends StatelessWidget {
         color: color ?? AppColors.surface,
         borderRadius: AppRadius.cardRadius,
         boxShadow: AppShadows.subtleCard,
-        border: Border.all(color: AppColors.border, width: 1),
+        border: Border.all(
+          color: AppColors.border.withValues(alpha: 0.4),
+          width: 1,
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -40,6 +42,8 @@ class CustomCard extends StatelessWidget {
         child: InkWell(
           borderRadius: AppRadius.cardRadius,
           onTap: onTap,
+          splashColor: AppColors.primary.withValues(alpha: 0.06),
+          highlightColor: AppColors.primary.withValues(alpha: 0.03),
           child: Padding(
             padding: padding ?? const EdgeInsets.all(AppSpacing.md),
             child: child,
