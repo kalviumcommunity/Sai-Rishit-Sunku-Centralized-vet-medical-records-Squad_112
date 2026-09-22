@@ -3,15 +3,21 @@
     "branch_koramangala": {
       "name": "VetCare Central - Koramangala",
       "address": "80 Feet Rd, 4th Block, Koramangala, Bengaluru, Karnataka 560034",
+      "city": "Bengaluru",
       "phone": "+91 80 2553 1001",
+      "email": "koramangala@vetcare.com",
       "isHub": true,
+      "isActive": true,
       "createdAt": "2026-08-01T09:00:00.000Z"
     },
     "branch_whitefield": {
       "name": "VetCare Satellite - Whitefield",
       "address": "ITPL Main Rd, near Hope Farm Junction, Whitefield, Bengaluru, Karnataka 560066",
+      "city": "Bengaluru",
       "phone": "+91 80 4125 3002",
+      "email": "whitefield@vetcare.com",
       "isHub": false,
+      "isActive": true,
       "createdAt": "2026-08-15T09:00:00.000Z"
     }
   },
@@ -22,6 +28,20 @@
       "role": "owner",
       "branchId": null,
       "createdAt": "2026-09-01T10:00:00.000Z"
+    },
+    "user_sarah_owner": {
+      "name": "Sarah Jenkins",
+      "email": "sarah@vetcare.com",
+      "role": "owner",
+      "branchId": null,
+      "createdAt": "2026-09-03T11:00:00.000Z"
+    },
+    "user_david_owner": {
+      "name": "David Miller",
+      "email": "david@vetcare.com",
+      "role": "owner",
+      "branchId": null,
+      "createdAt": "2026-09-17T14:30:00.000Z"
     },
     "user_dr_sharma": {
       "name": "Dr. Sharma",
@@ -36,6 +56,20 @@
       "role": "vet",
       "branchId": "branch_whitefield",
       "createdAt": "2026-08-20T08:30:00.000Z"
+    },
+    "user_dr_jenkins": {
+      "name": "Dr. Sarah Jenkins, DVM",
+      "email": "dr.jenkins@vetcare.com",
+      "role": "vet",
+      "branchId": "branch_koramangala",
+      "createdAt": "2026-09-18T09:15:00.000Z"
+    },
+    "user_admin": {
+      "name": "Admin VetCare",
+      "email": "admin@vetcare.com",
+      "role": "admin",
+      "branchId": "branch_koramangala",
+      "createdAt": "2026-07-01T08:00:00.000Z"
     }
   },
   "pets": {
@@ -51,6 +85,45 @@
       "photoUrl": "https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&auto=format&fit=crop&q=80",
       "weightKg": 31.5,
       "createdAt": "2026-09-02T11:00:00.000Z"
+    },
+    "pet_milo_002": {
+      "name": "Milo",
+      "nameLower": "milo",
+      "species": "Dog",
+      "breed": "Golden Retriever",
+      "gender": "male",
+      "dateOfBirth": "2023-01-15T00:00:00.000Z",
+      "microchipId": "#VT-9851",
+      "ownerId": "user_sarah_owner",
+      "photoUrl": "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&auto=format&fit=crop&q=80",
+      "weightKg": 28.0,
+      "createdAt": "2026-09-05T10:30:00.000Z"
+    },
+    "pet_lucky_003": {
+      "name": "Lucky",
+      "nameLower": "lucky",
+      "species": "Cat",
+      "breed": "Ginger Tabby",
+      "gender": "female",
+      "dateOfBirth": "2024-03-20T00:00:00.000Z",
+      "microchipId": "#VT-2041",
+      "ownerId": "user_sarah_owner",
+      "photoUrl": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&auto=format&fit=crop&q=80",
+      "weightKg": 4.5,
+      "createdAt": "2026-09-06T15:00:00.000Z"
+    },
+    "pet_sunny_004": {
+      "name": "Sunny",
+      "nameLower": "sunny",
+      "species": "Other",
+      "breed": "Yellow Canary",
+      "gender": "female",
+      "dateOfBirth": "2025-05-10T00:00:00.000Z",
+      "microchipId": "#VT-3302",
+      "ownerId": "user_david_owner",
+      "photoUrl": "https://images.unsplash.com/photo-1522858547137-f1dcec554f55?w=800&auto=format&fit=crop&q=80",
+      "weightKg": 0.2,
+      "createdAt": "2026-09-19T10:00:00.000Z"
     }
   },
   "treatments": {
@@ -60,13 +133,55 @@
       "medication": "Apoquel 16mg SID x 14d, Otomax Ear Drops BID x 7d",
       "notes": "Patient presented with severe pruritus, pedal licking, and bilateral pinnal erythema. Cytology shows secondary Malassezia overgrowth. Prescribed anti-inflammatory protocol and medicated wash.",
       "treatmentDate": "2026-09-10T11:30:00.000Z",
-      "followUpDate": "2026-09-24T11:30:00.000Z",
+      "followUpDate": "2026-09-26T11:30:00.000Z",
       "status": "active",
       "vetId": "user_dr_sharma",
       "branchId": "branch_koramangala",
       "vetName": "Dr. Sharma",
       "branchName": "VetCare Central - Koramangala",
-      "createdAt": "2026-09-10T11:45:00.000Z"
+      "createdAt": "2026-09-18T10:30:00.000Z"
+    },
+    "treatment_bruno_002": {
+      "petId": "pet_bruno_001",
+      "diagnosis": "Routine Dental Scaling & Polish",
+      "medication": "Clindamycin 150mg BID x 5d",
+      "notes": "Mild tartar accumulation on premolars. Full prophylaxis completed under sedation.",
+      "treatmentDate": "2026-07-12T14:00:00.000Z",
+      "followUpDate": "2026-07-26T14:00:00.000Z",
+      "status": "resolved",
+      "vetId": "user_dr_patel",
+      "branchId": "branch_whitefield",
+      "vetName": "Dr. Patel",
+      "branchName": "VetCare Satellite - Whitefield",
+      "createdAt": "2026-07-12T14:30:00.000Z"
+    },
+    "treatment_milo_003": {
+      "petId": "pet_milo_002",
+      "diagnosis": "Acute Dietary Indiscretion & Gastroenteritis",
+      "medication": "Maropitant (Cerenia) 16mg SID, Probiotic paste TID",
+      "notes": "Ingested table scraps. Mild dehydration. Anti-emetic administered SubQ.",
+      "treatmentDate": "2026-09-19T09:00:00.000Z",
+      "followUpDate": "2026-09-25T09:00:00.000Z",
+      "status": "active",
+      "vetId": "user_dr_jenkins",
+      "branchId": "branch_koramangala",
+      "vetName": "Dr. Sarah Jenkins, DVM",
+      "branchName": "VetCare Central - Koramangala",
+      "createdAt": "2026-09-19T09:20:00.000Z"
+    },
+    "treatment_lucky_004": {
+      "petId": "pet_lucky_003",
+      "diagnosis": "Feline Upper Respiratory Infection (URI)",
+      "medication": "Doxycycline liquid 50mg/mL SID x 10d",
+      "notes": "Serous nasal discharge and sneezing. Lungs clear. Good appetite.",
+      "treatmentDate": "2026-08-14T16:00:00.000Z",
+      "followUpDate": "2026-08-28T16:00:00.000Z",
+      "status": "resolved",
+      "vetId": "user_dr_patel",
+      "branchId": "branch_whitefield",
+      "vetName": "Dr. Patel",
+      "branchName": "VetCare Satellite - Whitefield",
+      "createdAt": "2026-08-14T16:30:00.000Z"
     }
   },
   "vaccinations": {
@@ -77,8 +192,84 @@
       "nextDueDate": "2029-04-15T10:00:00.000Z",
       "vetId": "user_dr_sharma",
       "branchId": "branch_koramangala",
-      "notes": "Administered right hind subcutaneous. Batch #RB-9941. No immediate adverse reaction.",
+      "notes": "Administered right hind subcutaneous. Batch #RB-9941. No adverse reaction.",
       "createdAt": "2026-04-15T10:15:00.000Z"
+    },
+    "vaccination_bruno_002": {
+      "petId": "pet_bruno_001",
+      "vaccineName": "DHPP 5-in-1 Canine Core",
+      "dateGiven": "2026-05-20T11:00:00.000Z",
+      "nextDueDate": "2027-05-20T11:00:00.000Z",
+      "vetId": "user_dr_sharma",
+      "branchId": "branch_koramangala",
+      "notes": "Core booster. Distemper, Hepatitis, Parvovirus, Parainfluenza.",
+      "createdAt": "2026-05-20T11:15:00.000Z"
+    },
+    "vaccination_bruno_003": {
+      "petId": "pet_bruno_001",
+      "vaccineName": "Bordetella Bronchiseptica",
+      "dateGiven": "2026-06-10T14:00:00.000Z",
+      "nextDueDate": "2027-06-10T14:00:00.000Z",
+      "vetId": "user_dr_patel",
+      "branchId": "branch_whitefield",
+      "notes": "Intranasal kennel cough vaccine. Multi-branch immunization verified.",
+      "createdAt": "2026-06-10T14:20:00.000Z"
+    },
+    "vaccination_bruno_004": {
+      "petId": "pet_bruno_001",
+      "vaccineName": "Leptospirosis 4-Way",
+      "dateGiven": "2025-08-15T09:30:00.000Z",
+      "nextDueDate": "2026-08-15T09:30:00.000Z",
+      "vetId": "user_dr_sharma",
+      "branchId": "branch_koramangala",
+      "notes": "Annual booster overdue for renewal.",
+      "createdAt": "2025-08-15T09:45:00.000Z"
+    },
+    "vaccination_milo_005": {
+      "petId": "pet_milo_002",
+      "vaccineName": "Rabies 3-Year",
+      "dateGiven": "2025-01-15T10:00:00.000Z",
+      "nextDueDate": "2028-01-15T10:00:00.000Z",
+      "vetId": "user_dr_jenkins",
+      "branchId": "branch_koramangala",
+      "notes": "Standard SubQ rabies immunization.",
+      "createdAt": "2025-01-15T10:15:00.000Z"
+    },
+    "vaccination_lucky_006": {
+      "petId": "pet_lucky_003",
+      "vaccineName": "FVRCP 3-Year Feline Core",
+      "dateGiven": "2025-03-25T11:00:00.000Z",
+      "nextDueDate": "2028-03-25T11:00:00.000Z",
+      "vetId": "user_dr_patel",
+      "branchId": "branch_whitefield",
+      "notes": "Feline rhinotracheitis, calicivirus, and panleukopenia.",
+      "createdAt": "2025-03-25T11:20:00.000Z"
+    }
+  },
+  "medical_documents": {
+    "doc_bruno_001": {
+      "petId": "pet_bruno_001",
+      "fileName": "CBC_Complete_Blood_Panel.pdf",
+      "fileUrl": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "uploadedBy": "user_dr_sharma",
+      "branchId": "branch_koramangala",
+      "createdAt": "2026-09-10T12:00:00.000Z"
+    },
+    "doc_bruno_002": {
+      "petId": "pet_bruno_001",
+      "fileName": "Thoracic_Radiograph_XRay.png",
+      "fileUrl": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80",
+      "uploadedBy": "user_dr_sharma",
+      "branchId": "branch_koramangala",
+      "createdAt": "2026-09-10T12:05:00.000Z"
+    },
+    "doc_milo_003": {
+      "petId": "pet_milo_002",
+      "fileName": "Abdominal_Ultrasound_Summary.pdf",
+      "fileUrl": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      "uploadedBy": "user_dr_jenkins",
+      "branchId": "branch_koramangala",
+      "createdAt": "2026-09-19T10:00:00.000Z"
     }
   }
 }

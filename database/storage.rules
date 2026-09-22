@@ -55,10 +55,16 @@ service firebase.storage {
         isVet() || isAdmin() || isPetOwner(petId)
       ) && request.resource.size <= 25 * 1024 * 1024;
 
-      // Delete: Pet owner, vet, or admin
+      // Delete: Only the original uploader (via metadata) or an admin can delete
       allow delete: if isAuthenticated() && (
-        isVet() || isAdmin() || isPetOwner(petId)
+        (resource.metadata != null && resource.metadata.uploadedBy == request.auth.uid) ||
+        isAdmin()
       );
+    }
+
+    // Explicit default-deny fallback for any other path in storage
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }
