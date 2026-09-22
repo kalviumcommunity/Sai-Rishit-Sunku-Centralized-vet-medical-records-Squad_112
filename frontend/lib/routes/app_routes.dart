@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../screens/admin/admin_screen.dart';
 import '../screens/auth/login_screen.dart';
@@ -8,6 +9,7 @@ import '../screens/pet/documents_screen.dart';
 import '../screens/pet/vaccinations_screen.dart';
 import '../screens/vet/add_treatment_screen.dart';
 import '../screens/vet/vet_followups_screen.dart';
+import '../services/auth_service.dart';
 import '../widgets/auth_gate.dart';
 
 /// Centralized Named Routes for VetCare.
@@ -34,17 +36,28 @@ class AppRoutes {
         login: (context) => const LoginScreen(),
         signup: (context) => const SignupScreen(),
         // Core authenticated screens with persistent Limelight bottom navigation
-        ownerHome: (context) => const MainNavigationShell(initialIndex: 0),
+        ownerHome: (context) {
+          return const MainNavigationShell(initialIndex: 0);
+        },
         petProfile: (context) => const MainNavigationShell(initialIndex: 1),
         addPet: (context) => const MainNavigationShell(initialIndex: 2),
-        vetSearch: (context) => const MainNavigationShell(initialIndex: 3),
+        vetSearch: (context) {
+          final role = context.read<AuthService>().userRole;
+          return MainNavigationShell(initialIndex: (role == 'vet' || role == 'admin') ? 0 : 3);
+        },
         profile: (context) => const MainNavigationShell(initialIndex: 4),
         // Secondary sub-screens / vet clinical workflows
         vetFollowups: (context) => const VetFollowupsScreen(),
         addTreatment: (context) => const AddTreatmentScreen(),
         vaccinations: (context) => const VaccinationsScreen(),
         documents: (context) => const DocumentsScreen(),
-        admin: (context) => const AdminScreen(),
+        admin: (context) {
+          final role = context.read<AuthService>().userRole;
+          if (role == 'vet' || role == 'admin') {
+            return const MainNavigationShell(initialIndex: 3);
+          }
+          return const AdminScreen();
+        },
       };
 
   /// Optional onGenerateRoute for custom transitions or argument handling

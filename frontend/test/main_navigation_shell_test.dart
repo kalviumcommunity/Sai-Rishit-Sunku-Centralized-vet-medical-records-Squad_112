@@ -105,5 +105,40 @@ void main() {
       // Crucial: Ensure LimelightNavBar is absent on Login
       expect(find.byType(LimelightNavBar), findsNothing);
     });
+
+    testWidgets('Veterinarian role displays clinical tabs and Admin Hub in LimelightNavBar', (WidgetTester tester) async {
+      final authService = AuthService();
+      await authService.switchRole('vet');
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: ChangeNotifierProvider<AuthService>.value(
+            value: authService,
+            child: const MainNavigationShell(initialIndex: 0),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify Veterinarian/Admin Nav Items
+      expect(find.text('Patients'), findsOneWidget);
+      expect(find.text('Follow-ups'), findsOneWidget);
+      expect(find.text('Record Care'), findsOneWidget);
+      expect(find.text('Admin Hub'), findsOneWidget);
+      expect(find.text('Profile'), findsOneWidget);
+
+      // Verify Tab 0 is Patients (VetSearchScreen)
+      expect(find.text('Cross-Branch Pet Search'), findsOneWidget);
+
+      // Tap Admin Hub
+      await tester.tap(find.text('Admin Hub'));
+      await tester.pumpAndSettle();
+
+      // Verify Admin Screen is displayed
+      expect(find.text('Admin Network Console'), findsOneWidget);
+      expect(find.text('Branches'), findsOneWidget);
+      expect(find.widgetWithText(ElevatedButton, '+ Add Branch'), findsOneWidget);
+    });
   });
 }

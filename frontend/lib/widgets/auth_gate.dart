@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../screens/admin/admin_screen.dart';
 import '../screens/main_navigation_shell.dart';
 import '../screens/splash/splash_screen.dart';
 import '../services/auth_service.dart';
@@ -19,15 +18,7 @@ class AuthGate extends StatelessWidget {
 
     // If already authenticated on cold start, land directly on role dashboard with bottom navigation
     if (authService.isAuthenticated) {
-      switch (authService.userRole) {
-        case 'vet':
-          return const MainNavigationShell(initialIndex: 3);
-        case 'admin':
-          return const AdminScreen();
-        case 'owner':
-        default:
-          return const MainNavigationShell(initialIndex: 0);
-      }
+      return const MainNavigationShell(initialIndex: 0);
     }
 
     // Unauthenticated cold start: show splash flow

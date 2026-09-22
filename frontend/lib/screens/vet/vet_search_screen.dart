@@ -6,7 +6,9 @@ import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../services/medical_records_service.dart';
 import '../../utils/constants.dart';
+import '../../widgets/pet_avatar_view.dart';
 import '../../widgets/pet_mascots.dart';
+import '../main_navigation_shell.dart';
 
 /// DAY 9 — Vet: Search Pets (Cross-Branch Proof, Part 1)
 ///
@@ -73,7 +75,8 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
     setState(() => _isLoading = true);
 
     final authService = context.read<AuthService>();
-    final vetBranch = authService.currentUserModel?.branchId ?? 'branch_downtown';
+    final vetBranch =
+        authService.currentUserModel?.branchId ?? 'branch_downtown';
 
     final results = await _recordsService.searchPets(
       query: _searchController.text.trim(),
@@ -117,8 +120,32 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
     final displayedPets = _filteredResults;
 
     return Scaffold(
-      backgroundColor: AppColors.aestheticBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                  color: AppColors.border.withValues(alpha: 0.4), width: 1),
+            ),
+            child: const Icon(Icons.arrow_back,
+                size: 18, color: AppColors.textPrimary),
+          ),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              final shell = MainNavigationShell.of(context);
+              if (shell != null) {
+                shell.setTab(0);
+              }
+            }
+          },
+        ),
         title: const Text(
           'Cross-Branch Pet Search',
           style: TextStyle(
@@ -134,11 +161,29 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
                 shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4), width: 1),
               ),
-              child: const Icon(Icons.person_outline, size: 18, color: AppColors.textPrimary),
+              child: const Icon(Icons.admin_panel_settings_outlined,
+                  size: 18, color: Color(0xFF2563EB)),
+            ),
+            tooltip: 'Admin Console',
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.admin),
+          ),
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4), width: 1),
+              ),
+              child: const Icon(Icons.person_outline,
+                  size: 18, color: AppColors.textPrimary),
             ),
             tooltip: 'My Profile',
             onPressed: () => Navigator.pushNamed(context, AppRoutes.profile),
@@ -146,28 +191,37 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
                 shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4), width: 1),
               ),
-              child: const Icon(Icons.logout_outlined, size: 18, color: AppColors.textSecondary),
+              child: const Icon(Icons.logout_outlined,
+                  size: 18, color: AppColors.textSecondary),
             ),
             tooltip: 'Sign Out',
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (dialogCtx) => AlertDialog(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.bold)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  title: const Text('Sign Out',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   content: const Text('Are you sure you want to sign out?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(dialogCtx, false),
-                      child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                      child: const Text('Cancel',
+                          style: TextStyle(color: AppColors.textSecondary)),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(dialogCtx, true),
-                      child: const Text('Sign Out', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                      child: const Text('Sign Out',
+                          style: TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
@@ -189,12 +243,17 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 100),
-          children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md, AppSpacing.sm, AppSpacing.md, 100),
+              children: [
             // Subtitle description banner
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 4, vertical: AppSpacing.xs),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -226,13 +285,15 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
+                border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4), width: 1),
                 boxShadow: AppShadows.subtleCard,
               ),
               child: Material(
                 color: Colors.transparent,
                 child: ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22)),
                   leading: Container(
                     width: 42,
                     height: 42,
@@ -240,7 +301,8 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                       color: AppColors.primaryLight,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.event_note, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.event_note,
+                        color: AppColors.primary, size: 20),
                   ),
                   title: const Text(
                     'View Scheduled Follow-ups',
@@ -252,10 +314,13 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                   ),
                   subtitle: const Text(
                     "Patients requiring check-ins across network clinics",
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style:
+                        TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
-                  trailing: const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.vetFollowups),
+                  trailing: const Icon(Icons.chevron_right,
+                      color: AppColors.textSecondary),
+                  onTap: () =>
+                      Navigator.pushNamed(context, AppRoutes.vetFollowups),
                 ),
               ),
             ),
@@ -287,7 +352,8 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
+                border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4), width: 1),
                 boxShadow: AppShadows.subtleCard,
               ),
               child: TextField(
@@ -297,11 +363,14 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: 'Search pets by name, microchip, or owner...',
-                  hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
-                  prefixIcon: const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
+                  hintStyle:
+                      const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+                  prefixIcon: const Icon(Icons.search,
+                      color: AppColors.textSecondary, size: 20),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18, color: AppColors.textSecondary),
+                          icon: const Icon(Icons.clear,
+                              size: 18, color: AppColors.textSecondary),
                           onPressed: () {
                             _searchController.clear();
                             _fetchPets();
@@ -310,7 +379,8 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                       : null,
                   filled: true,
                   fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(20),
                     borderSide: BorderSide.none,
@@ -328,13 +398,19 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _buildQuickFilterChip(id: 'dog', label: 'Dogs', icon: Icons.pets),
+                  _buildQuickFilterChip(
+                      id: 'dog', label: 'Dogs', icon: Icons.pets),
                   const SizedBox(width: 8),
-                  _buildQuickFilterChip(id: 'cat', label: 'Cats', icon: Icons.pets),
+                  _buildQuickFilterChip(
+                      id: 'cat', label: 'Cats', icon: Icons.pets),
                   const SizedBox(width: 8),
-                  _buildQuickFilterChip(id: 'urgent', label: 'Urgent Care', icon: Icons.healing),
+                  _buildQuickFilterChip(
+                      id: 'urgent', label: 'Urgent Care', icon: Icons.healing),
                   const SizedBox(width: 8),
-                  _buildQuickFilterChip(id: 'booster', label: 'Due for Booster', icon: Icons.vaccines),
+                  _buildQuickFilterChip(
+                      id: 'booster',
+                      label: 'Due for Booster',
+                      icon: Icons.vaccines),
                 ],
               ),
             ),
@@ -358,7 +434,9 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                     onPressed: () {
                       setState(() => _activeQuickFilter = null);
                     },
-                    child: const Text('Reset filters', style: TextStyle(fontSize: 12, color: AppColors.primary)),
+                    child: const Text('Reset filters',
+                        style:
+                            TextStyle(fontSize: 12, color: AppColors.primary)),
                   ),
               ],
             ),
@@ -370,29 +448,37 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
             if (_isLoading)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                child: Center(
+                    child: CircularProgressIndicator(color: AppColors.primary)),
               )
             else if (displayedPets.isEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
+                  border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.4), width: 1),
                 ),
-                child: Column(
+                child: const Column(
                   children: [
-                    const Icon(Icons.search_off, size: 40, color: AppColors.textMuted),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'No pets found',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                    ),
-                    const SizedBox(height: 4),
+                    Icon(Icons.search_off,
+                        size: 40, color: AppColors.textMuted),
+                    SizedBox(height: 10),
                     Text(
+                      'No pets found',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary),
+                    ),
+                    SizedBox(height: 4),
+                    const Text(
                       'Try searching for another pet or clear active filters.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -414,7 +500,8 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
+                border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4), width: 1),
                 boxShadow: AppShadows.subtleCard,
               ),
               child: Row(
@@ -426,14 +513,15 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                       color: const Color(0xFFEFF6FF),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.cloud_done_outlined, color: Color(0xFF2563EB), size: 24),
+                    child: const Icon(Icons.cloud_done_outlined,
+                        color: Color(0xFF2563EB), size: 24),
                   ),
                   const SizedBox(width: 14),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Universal Hospital Sync',
                           style: TextStyle(
                             fontSize: 15,
@@ -442,8 +530,8 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                             letterSpacing: -0.2,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        const Text(
+                        SizedBox(height: 3),
+                        Text(
                           'Weekly Adherence: 92%',
                           style: TextStyle(
                             fontSize: 13,
@@ -451,10 +539,10 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                             color: Color(0xFF16A34A),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
+                        SizedBox(height: 2),
+                        const Text(
                           '100% of charts synchronized across metro branches.',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 11.5,
                             color: AppColors.textSecondary,
                           ),
@@ -468,8 +556,10 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 
   // Segmented Tab Button
   Widget _buildTabButton({required int index, required String label}) {
@@ -504,7 +594,9 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+                color: isSelected
+                    ? AppColors.textPrimary
+                    : AppColors.textSecondary,
               ),
             ),
           ),
@@ -565,14 +657,16 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
     final pet = item.pet;
     final isDog = pet.species.toLowerCase() == 'dog';
     final branchCount = item.distinctBranchCount;
-    final branchBadgeText = '$branchCount ${branchCount == 1 ? 'branch' : 'branches'}';
+    final branchBadgeText =
+        '$branchCount ${branchCount == 1 ? 'branch' : 'branches'}';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
+        border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.4), width: 1),
         boxShadow: AppShadows.subtleCard,
       ),
       child: Material(
@@ -596,16 +690,17 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                   width: 54,
                   height: 54,
                   decoration: BoxDecoration(
-                    color: isDog ? const Color(0xFFFED7AA) : const Color(0xFFFDE68A),
+                    color: isDog
+                        ? const Color(0xFFFED7AA)
+                        : const Color(0xFFFDE68A),
                     shape: BoxShape.circle,
                     border: Border.all(color: AppColors.primaryLight, width: 2),
                   ),
-                  child: ClipOval(
-                    child: Center(
-                      child: isDog
-                          ? const MascotDogWidget(size: 46)
-                          : const MascotCatWidget(size: 46),
-                    ),
+                  child: PetAvatarView(
+                    photoUrl: pet.photoUrl,
+                    species: pet.species,
+                    size: 54,
+                    isCircle: true,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -652,12 +747,17 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4.5),
                       decoration: BoxDecoration(
-                        color: branchCount > 1 ? const Color(0xFFEFF6FF) : AppColors.lightPill,
+                        color: branchCount > 1
+                            ? const Color(0xFFEFF6FF)
+                            : AppColors.lightPill,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: branchCount > 1 ? const Color(0xFFBFDBFE) : AppColors.border,
+                          color: branchCount > 1
+                              ? const Color(0xFFBFDBFE)
+                              : AppColors.border,
                           width: 1,
                         ),
                       ),
@@ -667,7 +767,9 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                           Icon(
                             Icons.hub_outlined,
                             size: 12,
-                            color: branchCount > 1 ? const Color(0xFF2563EB) : AppColors.textSecondary,
+                            color: branchCount > 1
+                                ? const Color(0xFF2563EB)
+                                : AppColors.textSecondary,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -675,14 +777,17 @@ class _VetSearchScreenState extends State<VetSearchScreen> {
                             style: TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w800,
-                              color: branchCount > 1 ? const Color(0xFF1D4ED8) : AppColors.textSecondary,
+                              color: branchCount > 1
+                                  ? const Color(0xFF1D4ED8)
+                                  : AppColors.textSecondary,
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Icon(Icons.arrow_forward_ios, size: 12, color: AppColors.textMuted),
+                    const Icon(Icons.arrow_forward_ios,
+                        size: 12, color: AppColors.textMuted),
                   ],
                 ),
               ],

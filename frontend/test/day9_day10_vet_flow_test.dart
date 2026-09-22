@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
-import 'package:vetcare/routes/app_routes.dart';
 import 'package:vetcare/screens/vet/vet_followups_screen.dart';
 import 'package:vetcare/screens/vet/vet_search_screen.dart';
 import 'package:vetcare/services/auth_service.dart';
@@ -10,7 +9,9 @@ import 'package:vetcare/utils/constants.dart';
 
 void main() {
   group('DAY 9 — Vet Search Pets & Cross-Branch Discovery Tests', () {
-    test('searchPets service accurately computes cross-branch counts and filters', () async {
+    test(
+        'searchPets service accurately computes cross-branch counts and filters',
+        () async {
       final service = MedicalRecordsService();
 
       // All pets
@@ -29,12 +30,15 @@ void main() {
       expect(bella.branches, contains('Central Metro Hub'));
 
       // Specific pet search: Oliver (cross-branch pet with records from 3 branches)
-      final oliverSearch = await service.searchPets(query: 'Oliver', tab: 'all');
+      final oliverSearch =
+          await service.searchPets(query: 'Oliver', tab: 'all');
       expect(oliverSearch.length, 1);
       expect(oliverSearch.first.distinctBranchCount, 3);
     });
 
-    testWidgets('VetSearchScreen renders 3 tabs, search bar, filter chips, branch-count badge, and sync banner', (WidgetTester tester) async {
+    testWidgets(
+        'VetSearchScreen renders 3 tabs, search bar, filter chips, branch-count badge, and sync banner',
+        (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -57,7 +61,8 @@ void main() {
 
       // 2. Search Bar
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.text('Search pets by name, microchip, or owner...'), findsOneWidget);
+      expect(find.text('Search pets by name, microchip, or owner...'),
+          findsOneWidget);
 
       // 3. Quick Filter Chips (Client-Side)
       expect(find.text('Dogs'), findsOneWidget);
@@ -104,7 +109,9 @@ void main() {
   });
 
   group('DAY 10 — Vet Today\'s Follow-ups & Cross-Branch Worklist Tests', () {
-    test('fetchUpcomingFollowups returns cross-branch treatments across multiple clinics', () async {
+    test(
+        'fetchUpcomingFollowups returns cross-branch treatments across multiple clinics',
+        () async {
       final service = MedicalRecordsService();
       final followups = await service.fetchUpcomingFollowups();
 
@@ -117,7 +124,9 @@ void main() {
       expect(branchOrigins.contains('Central Metro Hub'), isTrue);
     });
 
-    testWidgets('VetFollowupsScreen renders Cross-Branch banner, filters, multi-branch worklist, and chat icon', (WidgetTester tester) async {
+    testWidgets(
+        'VetFollowupsScreen renders Cross-Branch banner, filters, multi-branch worklist, and chat icon',
+        (WidgetTester tester) async {
       tester.view.physicalSize = const Size(800, 1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.resetPhysicalSize());
@@ -155,13 +164,19 @@ void main() {
       expect(find.text('Today, 10:30 AM'), findsOneWidget);
       expect(find.text('Today, 02:00 PM'), findsOneWidget);
 
-      // 5. Visual-only Chat Icon Placeholder
+      // 5. Interactive Owner Messaging Action (replaces visual-only placeholder)
       expect(find.byIcon(Icons.chat_bubble_outline), findsWidgets);
 
-      // Tapping chat icon displays the visual placeholder message
+      // Tapping chat icon opens the working owner message bottom sheet
       await tester.tap(find.byIcon(Icons.chat_bubble_outline).first);
       await tester.pumpAndSettle();
-      expect(find.text('Owner messaging channel is a placeholder.'), findsOneWidget);
+      expect(find.text('Send Owner Update'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+
+      // Tap Send Owner Update button
+      await tester.tap(find.text('Send Owner Update'));
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
 
       // Filter test: tap "Post-Surgery (2)" tab
       await tester.tap(find.text('Post-Surgery (2)'));
@@ -169,7 +184,8 @@ void main() {
 
       expect(find.text('Bella'), findsOneWidget);
       expect(find.text('Rocky'), findsOneWidget);
-      expect(find.text('Milo'), findsNothing); // Milo is urgent dermatitis, not post-surgery
+      expect(find.text('Milo'),
+          findsNothing); // Milo is urgent dermatitis, not post-surgery
     });
   });
 }

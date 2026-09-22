@@ -5,6 +5,7 @@ import '../../routes/app_routes.dart';
 import '../../services/medical_records_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/pet_mascots.dart';
+import '../main_navigation_shell.dart';
 
 /// DAY 10 — Vet: Today's Follow-ups (Cross-Branch Proof, Part 2)
 ///
@@ -76,20 +77,30 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
     final displayedItems = _filteredFollowups;
 
     return Scaffold(
-      backgroundColor: AppColors.aestheticBackground,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Container(
             padding: const EdgeInsets.all(6),
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
               shape: BoxShape.circle,
+              border: Border.all(color: AppColors.border.withValues(alpha: 0.4), width: 1),
             ),
             child: const Icon(Icons.arrow_back, size: 18, color: AppColors.textPrimary),
           ),
-          onPressed: () => Navigator.maybePop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              final shell = MainNavigationShell.of(context);
+              if (shell != null) {
+                shell.setTab(0);
+              }
+            }
+          },
         ),
         title: const Text(
           "Vet Today's Follow-ups",
@@ -104,9 +115,11 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
                 shape: BoxShape.circle,
+                border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.4), width: 1),
               ),
               child: const Icon(Icons.refresh, size: 18, color: AppColors.textPrimary),
             ),
@@ -117,9 +130,12 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 95),
-          children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, 95),
+              children: [
             // ===============================================================
             // 1. "CROSS-BRANCH ACCESS" BANNER
             // ===============================================================
@@ -252,7 +268,7 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
+                  border: Border.all(color: AppColors.border.withValues(alpha: 0.4), width: 1),
                 ),
                 child: const Column(
                   children: [
@@ -267,11 +283,13 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
               )
             else
               ...displayedItems.map((item) => _buildFollowupCard(item)),
-          ],
+            ],
+          ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   // Quick Filter Tab Button
   Widget _buildCategoryTab({required String id, required String label}) {
@@ -351,7 +369,7 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.aestheticBorder, width: 1.2),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.4), width: 1),
         boxShadow: AppShadows.subtleCard,
       ),
       child: Material(
@@ -458,17 +476,10 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
                         border: Border.all(color: AppColors.border.withValues(alpha: 0.6)),
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.textSecondary),
-                        tooltip: 'Owner Chat (Visual Placeholder)',
+                        icon: const Icon(Icons.chat_bubble_outline, size: 16, color: AppColors.primary),
+                        tooltip: 'Message Owner (${item.ownerName})',
                         padding: EdgeInsets.zero,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Owner messaging channel is a placeholder.'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
+                        onPressed: () => _openOwnerMessageSheet(item),
                       ),
                     ),
                   ],
@@ -497,20 +508,28 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Origin Branch (Proof of cross-branch query!)
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on_outlined, size: 14, color: AppColors.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Branch: ${item.originBranchName}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                      Expanded(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.location_on_outlined, size: 14, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Branch: ${item.originBranchName}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
 
                       // Scheduled Appointment Time
                       Row(
@@ -533,6 +552,118 @@ class _VetFollowupsScreenState extends State<VetFollowupsScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _openOwnerMessageSheet(VetFollowupItem item) {
+    final msgController = TextEditingController(
+      text: 'Hi ${item.ownerName}, this is a reminder from VetCare regarding ${item.petName}\'s upcoming follow-up for ${item.diagnosis}. Please confirm if you can make it.',
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+          top: AppSpacing.lg,
+          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.lg,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: AppColors.primaryLight,
+                  child: Icon(Icons.mark_chat_unread_outlined, color: AppColors.primary),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Message ${item.ownerName}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                      ),
+                      Text(
+                        'Patient: ${item.petName} (${item.petBreed})',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(color: AppColors.border),
+            const SizedBox(height: AppSpacing.sm),
+            const Text(
+              'Follow-up Care Note / Reminder SMS',
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: msgController,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Type instructions or follow-up note...',
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(sheetCtx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    backgroundColor: AppColors.success,
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Follow-up message dispatched to ${item.ownerName} for ${item.petName}!',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.send_rounded, size: 16),
+              label: const Text('Send Owner Update'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/models.dart';
-import 'medical_records_service.dart';
 
 /// Service managing medical document uploads to Firebase Storage
 /// and metadata records in Cloud Firestore under `medical_documents`.
@@ -24,7 +23,8 @@ class StorageService {
         id: 'doc_01',
         petId: petId,
         fileName: 'CBC_Complete_Blood_Panel.pdf',
-        fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        fileUrl:
+            'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         uploadedBy: 'user_dr_sharma',
         branchId: 'branch_koramangala',
         createdAt: now.subtract(const Duration(days: 8)),
@@ -33,7 +33,8 @@ class StorageService {
         id: 'doc_02',
         petId: petId,
         fileName: 'Abdominal_Radiograph_XRay.png',
-        fileUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80',
+        fileUrl:
+            'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80',
         uploadedBy: 'user_dr_sharma',
         branchId: 'branch_koramangala',
         createdAt: now.subtract(const Duration(days: 20)),
@@ -42,7 +43,8 @@ class StorageService {
         id: 'doc_03',
         petId: petId,
         fileName: 'Rabies_Immunization_Certificate.pdf',
-        fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+        fileUrl:
+            'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
         uploadedBy: 'user_dr_patel',
         branchId: 'branch_whitefield',
         createdAt: now.subtract(const Duration(days: 90)),
@@ -86,7 +88,8 @@ class StorageService {
     }
 
     final sanitizedName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-    final storagePath = 'pets/$petId/documents/${DateTime.now().millisecondsSinceEpoch}_$sanitizedName';
+    final storagePath =
+        'pets/$petId/documents/${DateTime.now().millisecondsSinceEpoch}_$sanitizedName';
     String downloadUrl = '';
 
     if (Firebase.apps.isNotEmpty) {
@@ -102,8 +105,12 @@ class StorageService {
           },
         );
 
-        final uploadTask = await storageRef.putData(bytes, metadata).timeout(const Duration(seconds: 4));
-        downloadUrl = await uploadTask.ref.getDownloadURL().timeout(const Duration(seconds: 4));
+        final uploadTask = await storageRef
+            .putData(bytes, metadata)
+            .timeout(const Duration(seconds: 4));
+        downloadUrl = await uploadTask.ref
+            .getDownloadURL()
+            .timeout(const Duration(seconds: 4));
 
         final firestore = FirebaseFirestore.instance;
         final docRef = firestore.collection('medical_documents').doc();
@@ -187,7 +194,9 @@ class StorageService {
             .timeout(const Duration(seconds: 2));
 
         if (snapshot.docs.isNotEmpty) {
-          final docs = snapshot.docs.map((d) => MedicalDocumentModel.fromFirestore(d)).toList();
+          final docs = snapshot.docs
+              .map((d) => MedicalDocumentModel.fromFirestore(d))
+              .toList();
           docs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return docs;
         }
